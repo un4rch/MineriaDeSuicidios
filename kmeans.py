@@ -3,4 +3,4 @@ class kmeans():
         self.n_clusters = n_clusters
     
     def fit():
-        return 0
+        return 23
