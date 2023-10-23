@@ -5,16 +5,15 @@ import nltk
 import re
 import emoji
 import emot
-import time
+import sys
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 
-dtPinnata = pd.read_csv('100lineas.csv')
+dtPinnata = pd.read_csv(sys.argv[1])
 print(dtPinnata.head())
 
 def convertirEmojis(texto, switch):  # convierte un emoji en un conjunto de palabras en inglés que lo representa. Si switch es False, entonces se eliminan los emojis
@@ -91,15 +90,10 @@ x_tokenized = [[w for w in sentence.split(" ") if w != ""] for sentence in x_cle
 label_map = {cat:index for index,cat in enumerate(np.unique(y))}
 y_prep = np.asarray([label_map[l] for l in y])
 
-start = time.time()
-
 model = gensim.models.Word2Vec(x_tokenized,
                  vector_size=100
                  # Size is the length of our vector.
                 )
-
-end = round(time.time()-start,2)
-print("This process took",end,"seconds.")
 
 class Sequencer():
     
@@ -172,14 +166,11 @@ sequencer = Sequencer(all_words = [token for seq in x_tokenized for token in seq
              )
 
 x_vecs = np.asarray([sequencer.textToVector(" ".join(seq)) for seq in x_tokenized])
-print(x_vecs.shape)
 
 pca_model = PCA(n_components=200)
 pca_model.fit(x_vecs)   
-print("Sum of variance ratios: ",sum(pca_model.explained_variance_ratio_))
 
 x_comps = pca_model.transform(x_vecs)
 x_comps.shape
 
-print(label_map)
-print(x_comps)
+np.savetxt('x_prep.csv', x_comps, delimiter=',')
