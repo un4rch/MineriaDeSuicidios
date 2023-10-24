@@ -4,7 +4,7 @@ from sklearn.metrics import silhouette_score
 
 
 class KMeans():
-    def __init__(self, dataset, n_clusters, max_iter=100, init="random_init", p_minkowski=2):
+    def __init__(self, dataset, n_clusters, max_iter=None, init="random_init", p_minkowski=2):
         self.dataset = dataset
         self.n_clusters = n_clusters
         self.max_iter = max_iter
@@ -17,6 +17,7 @@ class KMeans():
         self.p_minkowsi = p_minkowski
 
     def random_init(self):
+        #print(self.dataset)
         return random.sample(self.dataset, self.n_clusters)
 
     def space_division_init(self):
@@ -34,7 +35,7 @@ class KMeans():
     def separated_init(self):
         # Comprobar posibles errores
         if 2 * self.n_clusters > len(self.dataset):
-            raise AssertionError("Hay mas clusters que elementos")
+            raise AssertionError("Hay menos clusters que la mitad de elementos")
 
         # Se cojen aleatoriamente el doble de centroides
         k2_centroids = random.sample(self.dataset, 2 * self.n_clusters)
@@ -97,36 +98,51 @@ class KMeans():
     def has_converged(self, old_centroids, new_centroids, tol=1e-4):
         return all(self.distancia_mikowski(old, new) < tol for old, new in zip(old_centroids, new_centroids))
 
-    def fit(self, dataset):
-        for _ in range(self.max_iter):
-            clusters = self.assign_to_clusters(dataset, self.centroides)
-            new_centroids = self.recalculate_centroids(clusters)
-            if self.has_converged(centroids, new_centroids):
-                break
-
-            # Silhouette_score
-            centroids = new_centroids
-            # Dentro del método fit de la clase KMeans, después de la convergencia
-            clusters = self.assign_to_clusters(dataset, self.centroides)
-            silhouette_avg = silhouette_score(dataset, [self.dataset[i] for i in clusters])
-            print(f"Silhouette Score: {silhouette_avg}")
-
-            # SSE
-            sse = 0
-            for i, cluster in enumerate(clusters):
-                for point in cluster:
-                    sse += self.distancia_mikowski(point, self.centroides[i])
-            print(f"SSE (Sum of Squared Errors): {sse}")
-
+    def fit(self):
+        dataset = self.dataset
+        centroids = self.centroides
+        clusters = self.assign_to_clusters(dataset, self.centroides)
+        if self.max_iter == None:
+            while True:
+                new_centroids = self.recalculate_centroids(clusters)
+                if self.has_converged(centroids, new_centroids):
+                    break
+                centroids = new_centroids
+            self.centroides = new_centroids
+        else:
+            for _ in range(self.max_iter):
+                new_centroids = self.recalculate_centroids(clusters)
+                self.centroides = new_centroids
+                # Dentro del método fit de la clase KMeans, después de la convergencia
+        clusters = self.assign_to_clusters(dataset, self.centroides)
+        #silhouette_avg = silhouette_score(dataset, [self.dataset[i] for i in clusters])
+        #print(f"Silhouette Score: {silhouette_avg}")
+        # SSE
+        sse = 0
+        for i, cluster in enumerate(clusters):
+            for point in cluster:
+                sse += self.distancia_mikowski(point, self.centroides[i])
+        print(f"SSE (Sum of Squared Errors): {sse}")
         return centroids, clusters
-
-
-dataset_example = [(3, 4), (3, 1), (5, 10), (7, 2), (9, 5)]
-kmeans = KMeans(dataset_example, n_clusters=2, init="separated_init", p_minkowski=5)
-print(dataset_example)
-print(kmeans.centroides)
-print(kmeans.fit(dataset_example))
-
+    
+    def predict(self, dataset):
+        clusters = self.assign_to_clusters(dataset, self.centroides)
+        return self.assign_numeric_labels(clusters)
+    
+    def assign_numeric_labels(self, clusters_array):
+        labels = {}
+        for idx,cluster in enumerate(clusters_array):
+            for instance in cluster:
+                labels[instance] = idx
+        return labels
+"""
+dataset_example = [(3, 4, 5), (3, 3, 1), (5, 6, 10), (7, 5, 2), (1, 9, 5), (4,6,7), (9,8,7)]
+kmeans = KMeans(dataset_example, n_clusters=3, init="random_init", p_minkowski=5)
+ct, cl = kmeans.fit()
+print(ct)
+print(cl)
+print(kmeans.assign_numeric_labels(cl))
+"""
 """
 # Función para cargar datos desde un archivo CSV y manejar valores no numéricos o celdas vacías
 def load_data(filename):
