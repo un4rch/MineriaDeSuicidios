@@ -10,6 +10,7 @@ from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 
@@ -86,6 +87,7 @@ class Preprocessor:
     def word2vec(self, texts_array, labels_array, pca_dimensions):
         texts_array = np.array(texts_array)
         labels_array = np.array(labels_array)
+
         x_cleaned = [self.preprocesarLenguajeNatural(t, "switch") for t in texts_array]
         x_tokenized = [[w for w in sentence.split(" ") if w != ""] for sentence in x_cleaned]
         if not pd.isnull(labels_array).all():
@@ -109,8 +111,38 @@ class Preprocessor:
         #np.savetxt('x_prep.csv', x_comps, delimiter=',')
         return x_prep,y_prep
     
-    def doc2vec(self):
-        None
+    def doc2vec(self, texts_array, labels_array, pca_dimensions):
+        texts_array = np.array(texts_array)
+        y = np.array(labels_array)
+
+        x_cleaned = [self.preprocesarLenguajeNatural(t, "switch") for t in texts_array]
+        x_tokenized = [[w for w in sentence.split(" ") if w != ""] for sentence in x_cleaned]
+
+        if not pd.isnull(labels_array).all():
+            label_map = {cat:index for index,cat in enumerate(np.unique(labels_array))}
+            y_prep = np.asarray([label_map[l] for l in labels_array])
+        else:
+            y_prep = None
+
+        tagged_data = [TaggedDocument(words=row, tags=[str(label)]) for row, label in zip(x_tokenized, y_prep)]
+        model = Doc2Vec(vector_size=1000, window=5, min_count=1, workers=4, epochs=20)
+        model.build_vocab(tagged_data)
+        model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
+        model.save("reddit_suicide_depression.model")
+
+        nuevo_vectors = []
+        for tokens in x_tokenized:
+            vector = model.infer_vector(tokens)
+            nuevo_vectors.append(vector)
+
+        pca_model = PCA(n_components=200)
+        pca_model.fit(nuevo_vectors)
+
+        x_comps = pca_model.transform(nuevo_vectors)
+        x_comps.shape
+
+        #np.savetxt('x_prep.csv', x_comps, delimiter=',')
+        return x_comps, y_prep
 
 class Sequencer():
     

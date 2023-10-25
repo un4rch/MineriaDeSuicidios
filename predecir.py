@@ -11,8 +11,12 @@ with open("kmeans_model.pkl", "rb") as file:
 dtPinnata = pd.read_csv(sys.argv[1])
 x,y = np.asarray(dtPinnata["text"]),np.asarray(dtPinnata["class"])
 
+label_map = {cat:index for index,cat in enumerate(np.unique(y))}
+y = np.asarray([label_map[l] for l in y])
+
 preprocessor = Preprocessor()
-x_prep,y_prep = preprocessor.word2vec(x, y, pca_dimensions=200)
+x_prep,y_prep = preprocessor.doc2vec(x, y, pca_dimensions=200)
+
 
 assigned_labels = kmeans.predict(x_prep)
 

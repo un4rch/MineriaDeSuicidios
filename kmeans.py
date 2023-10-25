@@ -133,7 +133,7 @@ class KMeans():
         labels = {}
         for idx,cluster in enumerate(clusters_array):
             for instance in cluster:
-                labels[instance] = idx
+                labels[id(instance)] = idx
         return labels
 """
 dataset_example = [(3, 4, 5), (3, 3, 1), (5, 6, 10), (7, 5, 2), (1, 9, 5), (4,6,7), (9,8,7)]
