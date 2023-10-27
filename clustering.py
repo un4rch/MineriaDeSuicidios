@@ -34,7 +34,8 @@ train = False # True: train, False: predict
 # --------------------------------
 n_clusters = 3
 maxIter = None
-centorids_init = "random_init"
+tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
+centorids_init = "random_init" #random_init, space_division_init, separated_init
 p_minkowski = 2
 saveModeloKmeans = "kmeans_model.pkl" #None if you do not want to save model to predict later
 imprimirMetricas = True
@@ -68,7 +69,7 @@ def saveAssignedPredictions(filename, assigned_labels):
 def metodo_codo(dataset, num_codos):
     sum_of_squared_distances = []
     for k in range(1, num_codos):
-        kmeans = KMeans(dataset, n_clusters, maxIter, centorids_init, p_minkowski)
+        kmeans = KMeans(dataset, n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
         kmeans.fit()
         sum_of_squared_distances.append(kmeans.inertia)
     plt.figure(figsize=(8, 6))
@@ -124,7 +125,7 @@ if __name__ == "__main__":
         with open(useModeloKmeans, "rb") as file:
             kmeans = pickle.load(file)
     else:
-        kmeans = KMeans(vectors_list, n_clusters, maxIter, centorids_init, p_minkowski)
+        kmeans = KMeans(vectors_list, n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
     
     if train: # Do train
         # Separar los datos en 2 conjuntos, train y test
