@@ -4,10 +4,11 @@ from sklearn.metrics import silhouette_score
 
 
 class KMeans():
-    def __init__(self, dataset, n_clusters, max_iter=None, init="random_init", p_minkowski=2):
+    def __init__(self, dataset, n_clusters, max_iter=None, init="random_init", p_minkowski=2, tolerance=1e-4):
         self.dataset = dataset
         self.n_clusters = n_clusters
         self.max_iter = max_iter
+        self.tolerance = tolerance
 
         if init in ["random_init", "space_division_init", "separated_init"] and hasattr(KMeans, init):
             init_func = getattr(KMeans, init)
@@ -95,7 +96,7 @@ class KMeans():
         return new_centroids
 
     # Función para verificar si los centroides han convergido
-    def has_converged(self, old_centroids, new_centroids, tol=1e-4):
+    def has_converged(self, old_centroids, new_centroids, tol):
         return all(self.distancia_mikowski(old, new) < tol for old, new in zip(old_centroids, new_centroids))
 
     def fit(self):
@@ -105,7 +106,7 @@ class KMeans():
         if self.max_iter == None:
             while True:
                 new_centroids = self.recalculate_centroids(clusters)
-                if self.has_converged(centroids, new_centroids):
+                if self.has_converged(centroids, new_centroids, self.tolerance):
                     break
                 centroids = new_centroids
             self.centroides = new_centroids
