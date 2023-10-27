@@ -111,7 +111,7 @@ class Preprocessor:
         #np.savetxt('x_prep.csv', x_comps, delimiter=',')
         return x_prep,y_prep
     
-    def doc2vec(self, texts_array, labels_array, pca_dimensions):
+    def doc2vec(self, texts_array, labels_array, pca_dimensions, doc2vec_model=None):
         texts_array = np.array(texts_array)
         y = np.array(labels_array)
 
@@ -123,26 +123,28 @@ class Preprocessor:
             y_prep = np.asarray([label_map[l] for l in labels_array])
         else:
             y_prep = None
-
-        tagged_data = [TaggedDocument(words=row, tags=[str(label)]) for row, label in zip(x_tokenized, y_prep)]
-        model = Doc2Vec(vector_size=1000, window=5, min_count=1, workers=4, epochs=20)
-        model.build_vocab(tagged_data)
-        model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
-        model.save("reddit_suicide_depression.model")
+        if not doc2vec_model:
+            tagged_data = [TaggedDocument(words=row, tags=[str(label)]) for row, label in zip(x_tokenized, y_prep)]
+            model = Doc2Vec(vector_size=1000, window=5, min_count=1, workers=4, epochs=20)
+            model.build_vocab(tagged_data)
+            model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
+            #model.save("reddit_suicide_depression.model")
+        else:
+            model = Doc2Vec.load(doc2vec_model)
 
         nuevo_vectors = []
         for tokens in x_tokenized:
             vector = model.infer_vector(tokens)
             nuevo_vectors.append(vector)
 
-        pca_model = PCA(n_components=200)
+        pca_model = PCA(n_components=pca_dimensions)
         pca_model.fit(nuevo_vectors)
 
         x_comps = pca_model.transform(nuevo_vectors)
         x_comps.shape
 
         #np.savetxt('x_prep.csv', x_comps, delimiter=',')
-        return x_comps, y_prep
+        return x_comps, y_prep, model
 
 class Sequencer():
     
