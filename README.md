@@ -1,5 +1,5 @@
 # Configure application parameters
-"<see clustering script params>"
+see clustering.py script params
 # Run application
 ```
 python clustering.py
