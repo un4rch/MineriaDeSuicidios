@@ -122,7 +122,8 @@ class KMeans():
         for i, cluster in enumerate(clusters):
             for point in cluster:
                 sse += self.distancia_mikowski(point, self.centroides[i])
-        print(f"SSE (Sum of Squared Errors): {sse}")
+        #print(f"SSE (Sum of Squared Errors): {sse}")
+        self.inertia = sse
         return centroids, clusters
     
     def predict(self, dataset):
