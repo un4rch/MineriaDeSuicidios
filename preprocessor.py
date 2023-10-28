@@ -13,6 +13,7 @@ from nltk.tokenize import word_tokenize
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+import pickle
 
 class Preprocessor:
     def __init__(self) -> None:
@@ -84,34 +85,7 @@ class Preprocessor:
         linea = self.lematizar(linea)
         return linea
     
-    def word2vec(self, texts_array, labels_array, pca_dimensions):
-        texts_array = np.array(texts_array)
-        labels_array = np.array(labels_array)
-
-        x_cleaned = [self.preprocesarLenguajeNatural(t, "switch") for t in texts_array]
-        x_tokenized = [[w for w in sentence.split(" ") if w != ""] for sentence in x_cleaned]
-        if not pd.isnull(labels_array).all():
-            label_map = {cat:index for index,cat in enumerate(np.unique(labels_array))}
-            y_prep = np.asarray([label_map[l] for l in labels_array])
-        else:
-            y_prep = None
-        model = gensim.models.Word2Vec(x_tokenized, vector_size=100)
-        sequencer = Sequencer(all_words = [token for seq in x_tokenized for token in seq],
-              max_words = 1200,
-              seq_len = 15,
-              embedding_matrix = model.wv
-             )
-        x_vecs = np.asarray([sequencer.textToVector(" ".join(seq)) for seq in x_tokenized])
-
-        pca_model = PCA(n_components=pca_dimensions)
-        pca_model.fit(x_vecs)   
-
-        x_prep = pca_model.transform(x_vecs)
-        #x_prep.shape
-        #np.savetxt('x_prep.csv', x_comps, delimiter=',')
-        return x_prep,y_prep
-    
-    def doc2vec(self, texts_array, labels_array, pca_dimensions, doc2vec_model=None):
+    def doc2vec(self, texts_array, labels_array, pca_dimensions, doc2vec_model=None, pca_model=None):
         texts_array = np.array(texts_array)
         y = np.array(labels_array)
 
@@ -136,15 +110,17 @@ class Preprocessor:
         for tokens in x_tokenized:
             vector = model.infer_vector(tokens)
             nuevo_vectors.append(vector)
-
-        pca_model = PCA(n_components=pca_dimensions)
-        pca_model.fit(nuevo_vectors)
-
-        x_comps = pca_model.transform(nuevo_vectors)
-        x_comps.shape
+        if not pca_model:
+            pca_model = PCA(n_components=pca_dimensions)
+            pca_model.fit(nuevo_vectors)
+        else:
+            with open(pca_model, 'rb') as file:
+                pca_model = pickle.load(file)
+        x_prep = pca_model.transform(nuevo_vectors)
+        #x_prep.shape
 
         #np.savetxt('x_prep.csv', x_comps, delimiter=',')
-        return x_comps, y_prep, model
+        return x_prep, y_prep, model, pca_model
 
 class Sequencer():
     

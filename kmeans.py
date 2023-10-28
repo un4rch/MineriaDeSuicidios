@@ -126,6 +126,7 @@ class KMeans():
         #print(f"SSE (Sum of Squared Errors): {sse}")
         self.inertia = sse
         return centroids, clusters
+        # clusters is a list of lists with instances in each index cluster list
     
     def predict(self, dataset):
         clusters = self.assign_to_clusters(dataset, self.centroides)
@@ -135,15 +136,23 @@ class KMeans():
         labels = {}
         for idx,cluster in enumerate(clusters_array):
             for instance in cluster:
-                labels[id(instance)] = idx
+                labels[instance] = idx
         return labels
 """
-dataset_example = [(3, 4, 5), (3, 3, 1), (5, 6, 10), (7, 5, 2), (1, 9, 5), (4,6,7), (9,8,7)]
+#dataset_example = [(3, 4, 5), (3, 3, 1), (5, 6, 10), (7, 5, 2), (1, 9, 5), (4,6,7), (9,8,7)]
+dataset_example = [(1,2),(2,1),(6,3),(4,5),(9,7),(5,9)]
 kmeans = KMeans(dataset_example, n_clusters=3, init="random_init", p_minkowski=5)
 ct, cl = kmeans.fit()
-print(ct)
-print(cl)
+print(f"centroids: {ct}")
+print(f"clusters: {cl}")
+print()
+print("Assigned labels:")
 print(kmeans.assign_numeric_labels(cl))
+print()
+for idx,centorid in enumerate(ct):
+    print(f"centroid({idx}): {centorid}")
+    print(f"cluster({idx}): {cl[idx]}")
+
 """
 """
 # Función para cargar datos desde un archivo CSV y manejar valores no numéricos o celdas vacías
