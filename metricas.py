@@ -102,11 +102,11 @@ class Metrics:
         kappa = cohen_kappa_score(true_labels, predicted_labels)
         return kappa
 
-    def calculate_all_metrics(self, true_labels, predicted_labels, X, labels):
+    def calculate_all_metrics(self, true_labels, predicted_labels, X):
         # Métricas Internas
-        silhouette = silhouette_score(X, labels)
-        davies_bouldin = davies_bouldin_score(X, labels)
-        calinski_harabasz = calinski_harabasz_score(X, labels)
+        silhouette = silhouette_score(X, predicted_labels)
+        davies_bouldin = davies_bouldin_score(X, predicted_labels)
+        calinski_harabasz = calinski_harabasz_score(X, predicted_labels)
 
         # Métricas Externas
         adjusted_rand = adjusted_rand_score(true_labels, predicted_labels)
