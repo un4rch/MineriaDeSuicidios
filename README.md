@@ -1,5 +1,9 @@
+# Clone the repository:
+```
+git clone https://github.com/un4rch/MineriaDeSuicidios.git
+```
 # Configure application parameters
-see clustering.py script params
+Documentation section "Uso de la herramienta"
 # Run application
 ```
 python clustering.py
