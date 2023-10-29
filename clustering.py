@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from metricas import Metrics
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans as KMeans_sklearn
+from collections import Counter
 
 #Opciones:
 #dar un diccionario de numeros y labels "oficial para cambiarlos"
@@ -22,10 +23,10 @@ from sklearn.cluster import KMeans as KMeans_sklearn
 # Preproceso
 # ----------
 soloPreproceso = False
-preprocessed_file = None
+preprocessed_file = "50000instancias_prep.csv"
 # If preprocessed_file == None
-unpreprocessed_file = "100lineas.csv"
-guardarPreproceso = "x_prep.csv"
+unpreprocessed_file = "test50000.csv"
+guardarPreproceso = "test50000_prep.csv"
 pca_dimensions = 200
 # If preprocessed_file not None
 # Se usa la variable preprocessed_file
@@ -38,13 +39,14 @@ train = True # True: train, False: predict
 n_clusters = 3
 maxIter = None
 tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
-centorids_init = "random_init" #random_init, space_division_init, separated_init
+centorids_init = "space_division_init" #random_init, space_division_init, separated_init
 p_minkowski = 2
 test_size = 0.2 #20%
-saveModeloKmeans = "kmeans_model.pkl" #None if you do not want to save model to predict later
+saveModeloKmeans = "50000instancias_kmeans_model.pkl" #None if you do not want to save model to predict later
 imprimirMetricas = True
 # If imprimirMetricas == True
 n_codos = 10 # None if not want to make elbow method
+numIteracionesCodos = 50
 
 # Predicciones (If train == False)
 # --------------------------------
@@ -70,21 +72,58 @@ def saveAssignedPredictions(filename, assigned_labels):
                     writter.writerow([x[idx], label])"""
                 writter.writerow([x[idx], label])
 
-def metodo_codo(dataset, num_codos):
-    sum_of_squared_distances = []
-    for k in range(1, num_codos):
-        kmeans = KMeans(dataset, n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
-        kmeans.fit()
-        sum_of_squared_distances.append(kmeans.inertia)
-    plt.figure(figsize=(8, 6))
-    plt.plot(range(1, num_codos), sum_of_squared_distances, marker='o', linestyle='-', color='b')
-    plt.xlabel('Número de clusters (k)')
-    plt.ylabel('Suma de distancias al cuadrado')
-    plt.title('Método del codo para seleccionar k')
-    plt.grid(True)
-    plt.savefig(f'metodo_{num_codos}_codos.png', format='png')
-    plt.close()
-    k = np.argmin(sum_of_squared_distances[1:]) + 1
+def metodo_codo(dataset, num_codos, numIteracionesCodos):
+    lista100clusters = []
+    if numIteracionesCodos:
+        for i in range(numIteracionesCodos):
+            sum_of_squared_distances = []
+            print(f"iter {i}")
+            for k in range(1, num_codos+1):
+                print(f"codo {k}")
+                kmeans = KMeans(k, maxIter, centorids_init, p_minkowski, tolerance)
+                kmeans.fit(dataset)
+                sum_of_squared_distances.append(kmeans.inertia)
+            k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
+            plt.figure(figsize=(8, 6))
+            plt.plot(range(1, num_codos+1), sum_of_squared_distances, marker='o', linestyle='-', color='b')
+            plt.xlabel('Número de clusters (k)')
+            plt.ylabel('Suma de distancias al cuadrado')
+            plt.title('Método del codo para seleccionar k')
+            plt.grid(True)
+            plt.savefig(f'metodo_{num_codos}_codos_{k}_clusters.png', format='png')
+            plt.close()
+            lista100clusters.append(k)
+        frecuencias = Counter(lista100clusters)
+        frecuencias = dict(frecuencias)
+        print(frecuencias)
+        k = max(frecuencias, key=frecuencias.get)
+        print(k)
+        plt.bar(frecuencias.keys(),frecuencias.values())
+        # Agregar etiquetas de valor en las barras
+        for index, value in frecuencias.items():
+            plt.text(index, value, str(value), ha='center', va='bottom')
+        plt.xlabel('Número de Clusters')
+        plt.ylabel('Frecuencia')
+        plt.title('Frecuencia de Clusters')
+        plt.savefig(f'{numIteracionesCodos}_elbow_counts_per_cluster.png', format='png')
+        plt.close()
+        print(f"Saved_image: {numIteracionesCodos}_elbow_counts_per_cluster.png")
+    else:
+        for k in range(1, num_codos+1):
+            kmeans = KMeans(k, maxIter, centorids_init, p_minkowski, tolerance)
+            kmeans.fit(dataset)
+            sum_of_squared_distances.append(kmeans.inertia)
+        k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
+        plt.figure(figsize=(8, 6))
+        plt.plot(range(1, num_codos+1), sum_of_squared_distances, marker='o', linestyle='-', color='b')
+        plt.xlabel('Número de clusters (k)')
+        plt.ylabel('Suma de distancias al cuadrado')
+        plt.title('Método del codo para seleccionar k')
+        plt.grid(True)
+        plt.savefig(f'metodo_{num_codos}_codos_{k}_clusters.png', format='png')
+        plt.close()
+    #for idx,inertia in enumerate(sum_of_squared_distances):
+    #    print(f"{idx+1} clusters: {inertia}")
     return k
 
 def load_dataset(filename):
@@ -119,7 +158,7 @@ def plot_clusters_2d(clusters, centroids, filename):
     plt.legend()
     
     # Guardar la imagen
-    plt.savefig(f'{filename}.png', format='png')
+    plt.savefig(f'{filename}', format='png')
     plt.close()
 
 if __name__ == "__main__":
@@ -167,21 +206,21 @@ if __name__ == "__main__":
     if train: # Do train
         # Separar los datos en 2 conjuntos, train y test
         x_train,x_test,y_train,y_test = train_test_split(vectors_list, labels_list, test_size=test_size)
-        kmeans = KMeans(x_train, n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
+        kmeans = KMeans(n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
         print("Entrenamiento")
         print("-------------")
         print("[*] Entrenando kmeans...")
         print()
-        centroids, clusters = kmeans.fit()
+        centroids, clusters = kmeans.fit(x_train)
 
         y_test_predicted = kmeans.predict(x_test)
 
         # Elegir el numero de clusters optimo con el metodo de los codos
         if imprimirMetricas:
             metricas = Metrics()
-            n_clusters_optimo = metodo_codo(vectors_list, n_codos)
-            kmeans_codos = KMeans(x_train, n_clusters_optimo, maxIter, centorids_init, p_minkowski, tolerance)
-            centroids_codos, clusters_codos = kmeans_codos.fit()
+            n_clusters_optimo = metodo_codo(vectors_list, n_codos, numIteracionesCodos)
+            kmeans_codos = KMeans(n_clusters_optimo, maxIter, centorids_init, p_minkowski, tolerance)
+            centroids_codos, clusters_codos = kmeans_codos.fit(x_train)
             print("Metricas")
             print("--------")
             print(f"[*] Numero optimo de clusters (elbow method): {n_clusters_optimo}")
@@ -257,4 +296,3 @@ for post,label in assigned_labels.items():
             new_assigned_labels[label] = original_label
 print(new_assigned_labels)
 """
-# TODO model = Doc2Vec.load(doc2vec_model) se rompe
