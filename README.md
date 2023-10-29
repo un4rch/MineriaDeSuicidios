@@ -32,7 +32,7 @@ guardarPreproceso:
    - str(”<nombre-fichero>”): para guardar el preproceso
    - None: para no guardar el preproceso
 ```
-– Si los datos si están preprocesados:
+- Si los datos si están preprocesados:
 ```
 preprocessed_file: str(”<nombre-fichero>”)
 unpreprocessed_file: None
@@ -67,7 +67,7 @@ n_codos = int(<n codos>) (para elegir el numero optimo de clusters con el metodo
 – soloPreproceso: False
 – train: False
 ```
-– Si los datos no están preprocesados:
+- Si los datos no están preprocesados:
 ```
 preprocessed_file: None
 unpreprocessed_file: str(”<nombre-fichero>”)
@@ -78,7 +78,7 @@ guardarPreproceso:
    - str(”<nombre-fichero>”): para guardar el preproceso
    - None: para no guardar el preproceso
 ```
-– Si los datos si están preprocesados:
+- Si los datos si están preprocesados:
 ```
 preprocessed_file: str(”<nombre-fichero>”)
 unpreprocessed_file: None
