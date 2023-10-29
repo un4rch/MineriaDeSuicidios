@@ -13,10 +13,6 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans as KMeans_sklearn
 from collections import Counter
 
-#Opciones:
-#dar un diccionario de numeros y labels "oficial para cambiarlos"
-#gudardar fichero preprocesado o usar uno existente
-
 #--------------------------------------------------------#
 # Varibales para configurar el comportamiento del script #
 #--------------------------------------------------------#
@@ -54,11 +50,6 @@ useModeloKmeans = "kmeans_model.pkl"
 doc2vec_model = "100lineas_doc2vec.model" # None to train, else use trained model to predict
 pca_model = "100lineas_pca.model"
 output_prediction_file = "predicted.csv"
-
-"""
-# Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas
-assignLabels = None # {0: "depresion", 1: "" 2: "", etc...}
-"""
 
 def saveAssignedPredictions(filename, assigned_labels):
     with open(filename, "w") as file:
