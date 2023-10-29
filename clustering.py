@@ -195,12 +195,13 @@ if __name__ == "__main__":
             print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
             # Comparativa KMeans implementado y sklearn con el mismo numero de clusters
             print(f"[*] Nuestras metricas")
-            #metricas.calculate_all_metrics(y_test, y_test_predicted, x_train, y_train)
+            metricas.calculate_all_metrics(y_test, np.array(list(y_test_predicted.values())), x_test)
             kmeans_sklearn = KMeans_sklearn(n_clusters=n_clusters)
             kmeans_sklearn.fit(x_train)
             y_test_predicted = kmeans_sklearn.predict(x_test)
             print(f"[*] sklearn metricas")
-            #metricas.calculate_all_metrics(y_test, y_test_predicted, x_train, y_train)
+            print(y_test_predicted)
+            metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             print()
     
         assigned_labels = kmeans.assign_numeric_labels(clusters)
