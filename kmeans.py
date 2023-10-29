@@ -4,28 +4,25 @@ from sklearn.metrics import silhouette_score
 
 
 class KMeans():
-    def __init__(self, dataset, n_clusters, max_iter=None, init="random_init", p_minkowski=2, tolerance=1e-4):
-        self.dataset = dataset
+    def __init__(self, n_clusters, max_iter=None, init="random_init", p_minkowski=2, tolerance=1e-4):
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.tolerance = tolerance
 
         if init in ["random_init", "space_division_init", "separated_init"] and hasattr(KMeans, init):
-            init_func = getattr(KMeans, init)
-            self.centroides = init_func(self)
+            self.init_func = getattr(KMeans, init)
         else:
             print("Error")
         self.p_minkowsi = p_minkowski
 
-    def random_init(self):
-        #print(self.dataset)
-        return random.sample(self.dataset, self.n_clusters)
+    def random_init(self,dataset):
+        return random.sample(dataset, self.n_clusters)
 
-    def space_division_init(self):
+    def space_division_init(self, dataset):
         # Dividir el espacio en cuadrantes y seleccionar aleatoriamente un punto de cada cuadrante
-        dimensions = len(self.dataset[0])
-        min_values = [min(data[i] for data in self.dataset) for i in range(dimensions)]
-        max_values = [max(data[i] for data in self.dataset) for i in range(dimensions)]
+        dimensions = len(dataset[0])
+        min_values = [min(data[i] for data in dataset) for i in range(dimensions)]
+        max_values = [max(data[i] for data in dataset) for i in range(dimensions)]
 
         centroids = []
         for _ in range(self.n_clusters):
@@ -33,13 +30,13 @@ class KMeans():
             centroids.append(tuple(centroid))
         return centroids
 
-    def separated_init(self):
+    def separated_init(self, dataset):
         # Comprobar posibles errores
-        if 2 * self.n_clusters > len(self.dataset):
+        if 2 * self.n_clusters > len(dataset):
             raise AssertionError("Hay menos clusters que la mitad de elementos")
 
         # Se cojen aleatoriamente el doble de centroides
-        k2_centroids = random.sample(self.dataset, 2 * self.n_clusters)
+        k2_centroids = random.sample(dataset, 2 * self.n_clusters)
 
         # ...Comentar este codigo...
         selected_centroids = []
@@ -99,24 +96,25 @@ class KMeans():
     def has_converged(self, old_centroids, new_centroids, tol):
         return all(self.distancia_mikowski(old, new) < tol for old, new in zip(old_centroids, new_centroids))
 
-    def fit(self):
-        dataset = self.dataset
+    def fit(self, dataset):
+        self.centroides = self.init_func(self, dataset)
         centroids = self.centroides
-        clusters = self.assign_to_clusters(dataset, self.centroides)
         if self.max_iter == None:
             while True:
+                clusters = self.assign_to_clusters(dataset, centroids)
                 new_centroids = self.recalculate_centroids(clusters)
                 if self.has_converged(centroids, new_centroids, self.tolerance):
                     break
                 centroids = new_centroids
-            self.centroides = new_centroids
         else:
             for _ in range(self.max_iter):
+                clusters = self.assign_to_clusters(dataset, centroids)
                 new_centroids = self.recalculate_centroids(clusters)
-                self.centroides = new_centroids
+                centroids = new_centroids
                 # Dentro del método fit de la clase KMeans, después de la convergencia
+        self.centroides = centroids
         clusters = self.assign_to_clusters(dataset, self.centroides)
-        #silhouette_avg = silhouette_score(dataset, [self.dataset[i] for i in clusters])
+        #silhouette_avg = silhouette_score(dataset, [dataset[i] for i in clusters])
         #print(f"Silhouette Score: {silhouette_avg}")
         # SSE
         sse = 0
