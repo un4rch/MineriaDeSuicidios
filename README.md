@@ -15,8 +15,8 @@ preprocessed_file: None
 unpreprocessed_file: str(”<nombre-fichero>”)
 pca_dimensions: int(<num-dimensiones>)
 guardarPreproceso:
-∗ ”<nombre-fichero>”: para guardar el preproceso
-∗ None: para no guardar el preproceso
+   - ”<nombre-fichero>”: para guardar el preproceso
+   - None: para no guardar el preproceso
 ```
 ## Si queremos entrenar un modelo:
 ```
@@ -64,8 +64,10 @@ n_codos = int(<n codos>) (para elegir el numero optimo de clusters con el metodo
 ```
 ## Si queremos predecir clusters de un conjunto de datos:
 ```
-– soloPreproceso: False
-– train: False
+soloPreproceso: False
+train: False
+useModeloKmeans: str(”<nombre-fichero>”) (el modelo de kmeans que hemos generado y guardado durante el entrenamiento)
+output_prediction_file: str(”<nombre-fichero>”) (para guardar las predicciones)
 ```
 - Si los datos no están preprocesados:
 ```
@@ -83,11 +85,4 @@ guardarPreproceso:
 preprocessed_file: str(”<nombre-fichero>”)
 unpreprocessed_file: None
 pca_dimensions: None
-```
-```
-guardarPreproceso:
-   - str(”<nombre-fichero>”): para guardar el preproceso
-   - None: para no guardar el preproceso
-useModeloKmeans: str(”<nombre-fichero>”) (el modelo de kmeans que hemos generado y guardado durante el entrenamiento)
-output_prediction_file: str(”<nombre-fichero>”) (para guardar las predicciones)
 ```
