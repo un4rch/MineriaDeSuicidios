@@ -12,6 +12,8 @@ from metricas import Metrics
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans as KMeans_sklearn
 from collections import Counter
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 #Opciones:
 #dar un diccionario de numeros y labels "oficial para cambiarlos"
@@ -22,9 +24,8 @@ from collections import Counter
 #--------------------------------------------------------#
 # Preproceso
 # ----------
-soloPreproceso = False
-#preprocessed_file = "50000instancias_prep.csv"
-preprocessed_file = None
+soloPreproceso = True
+preprocessed_file = "50000instancias_prep.csv"
 # If preprocessed_file == None
 unpreprocessed_file = "50000instancias.csv"
 guardarPreproceso = "50000instancias_prep.csv"
@@ -37,11 +38,11 @@ pca_dimensions = 200
 train = True # True: train, False: predict
 # Entrenamiento (If train == True)
 # --------------------------------
-n_clusters = 3
-maxIter = None
+n_clusters = 7 # 3,7,8
+maxIter = None #100
 tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
-centorids_init = "space_division_init" #random_init, space_division_init, separated_init
-p_minkowski = 2
+centorids_init = "random_init" #random_init, space_division_init, separated_init
+p_minkowski = 7.5
 test_size = 0.2 #20%
 saveModeloKmeans = "50000instancias_kmeans_model.pkl" #None if you do not want to save model to predict later
 imprimirMetricas = True
@@ -52,14 +53,19 @@ numIteracionesCodos = None
 # Predicciones (If train == False)
 # --------------------------------
 useModeloKmeans = "kmeans_model.pkl"
-doc2vec_model = None # None to train, else use trained model to predict
-pca_model = None
+doc2vec_model = "50000instancias_doc2vec.model" # None to train, else use trained model to predict
+pca_model = "50000instancias_pca.model"
 output_prediction_file = "predicted.csv"
 
 """
 # Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas
 assignLabels = None # {0: "depresion", 1: "" 2: "", etc...}
 """
+pruebas_n_clusters = [2,7,8]
+pruebas_maxIter = 100
+pruebas_tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
+pruebas_centorids_init = ["random_init", "space_division_init", "separated_init"]
+pruebas_p_minkowski = [1,2,7.5]
 
 def saveAssignedPredictions(filename, assigned_labels):
     with open(filename, "w") as file:
@@ -187,6 +193,76 @@ def plot_clusters_2d(clusters, centroids, filename):
     plt.savefig(f'{filename}', format='png')
     plt.close()
 
+def save_heatmap(pCm, imgname, dType):
+    plt.figure()
+    sns.heatmap(pCm, annot=True, fmt=dType, cmap="Blues")
+    plt.title(imgname)
+    plt.ylabel("Clusters")
+    plt.xlabel("Clases")
+    plt.savefig(f"{imgname}.png", format='png')
+    plt.close()
+def class_to_cluster(labels, predicted_labels):
+    to_string = lambda x : str(x)
+    cm = confusion_matrix(np.vectorize(to_string)(predicted_labels), np.vectorize(to_string)(labels))
+    filas_no_cero = np.any(np.transpose(cm) != 0, axis=1)
+    cm = np.transpose(cm)[filas_no_cero]
+    cm = np.transpose(cm)
+    save_heatmap(cm, 'original_heatmap', "d")
+    porcentajes = np.zeros_like(cm, dtype=float)
+    cm_T = np.transpose(cm)
+    for idx,cluster in enumerate(cm):
+        for clase,instancias in enumerate(cluster):
+            total = np.sum(cm_T[clase])
+            porcentajes[idx][clase] = (cm[idx][clase] / total) * 100
+    save_heatmap(porcentajes, 'class_clusters_percentages', ".2f")
+    mapping = {}
+    for cluster in range(len(porcentajes)):
+        clase = np.argmax(porcentajes[cluster])
+        mapping[str(cluster)] = str(clase)
+    kmeansLabels_reassigned = [mapping[cluster] for cluster in np.vectorize(str)(predicted_labels)]
+    kmeansLabels_reassigned = [int(cluster_clase) for cluster_clase in kmeansLabels_reassigned]
+    kmeansLabels_reassigned = np.array(kmeansLabels_reassigned)
+    class_clusters_equivalents = {}
+    # { clase : [clusters] }
+    for clave, valor in mapping.items():
+        if valor not in class_clusters_equivalents:
+            class_clusters_equivalents[valor] = [clave]
+        else:
+            class_clusters_equivalents[valor].append(clave)
+    print()
+    print("\tclase --> [clusters]")
+    print("\t--------------------\n")
+    for clase,clusters in class_clusters_equivalents.items():
+        print(f"\t{clase} --> {clusters}")
+    print()
+    reverse_mapping = {}
+    for clase,clusters in class_clusters_equivalents.items():
+        for cluster in clusters:
+            reverse_mapping[cluster] = clase
+    output_array = np.vectorize(reverse_mapping.get)(predicted_labels)
+    # return output_array
+    cm_semi_agrupada = []
+    clases_ordenadas = [int(clase) for clase in list(class_clusters_equivalents.keys())]
+    clases_ordenadas = sorted(clases_ordenadas)
+    for clase in clases_ordenadas:
+        for cluster in class_clusters_equivalents[str(clase)]:
+            cm_semi_agrupada.append(cm[int(cluster)].tolist())
+    cm_semi_agrupada = np.array(cm_semi_agrupada)
+    save_heatmap(cm_semi_agrupada, 'heatmap_before_cluster_grouping', "d")
+    cm_agrupada = np.zeros_like(cm_semi_agrupada, dtype=int)
+    clases_ordenadas = [int(clase) for clase in list(class_clusters_equivalents.keys())]
+    clases_ordenadas = sorted(clases_ordenadas)
+    for clase in range(len(np.transpose(cm))):
+        if clase in clases_ordenadas:
+            filas_a_sumar = [int(cluster) for cluster in class_clusters_equivalents[str(clase)]]
+            cm_agrupada[int(clase)] = np.sum(cm[filas_a_sumar], axis=0)
+        else:
+            cm_agrupada[int(clase)] = np.zeros((1,len(np.transpose(cm))))
+    if len(cm_agrupada) > len(np.transpose(cm)):
+        filas_no_cero = np.any(cm_agrupada != 0, axis=1)
+        cm_agrupada = cm_agrupada[filas_no_cero]
+    save_heatmap(cm_agrupada, 'heatmap_after_cluster_grouping', "d")
+
 if __name__ == "__main__":
     x = None
     y = None
@@ -207,7 +283,7 @@ if __name__ == "__main__":
                 writer = csv.writer(file)
                 writer.writerow(["text","class"])
                 for idx,point in enumerate(vectors_list):
-                    writer.writerow([point,y[idx]])
+                    writer.writerow([point,y_prep[idx]])
             print(f"    Fichero guardado: {guardarPreproceso}")
             if train:
                 doc2vec_model.save(unpreprocessed_file.split(".")[0]+"_doc2vec.model")
@@ -237,6 +313,8 @@ if __name__ == "__main__":
         centroids, clusters = kmeans.fit(x_train)
 
         y_test_predicted = kmeans.predict(x_test)
+        y_test_predicted = np.array(list(y_test_predicted.values()))
+        class_to_cluster(y_test, y_test_predicted)
 
         # Elegir el numero de clusters optimo con el metodo de los codos
         if imprimirMetricas:
@@ -260,12 +338,12 @@ if __name__ == "__main__":
                 print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
             # Comparativa KMeans implementado y sklearn con el mismo numero de clusters
             print(f"[*] Nuestras metricas")
-            metricas.calculate_all_metrics(y_test, np.array(list(y_test_predicted.values())), x_test)
+            metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             kmeans_sklearn = KMeans_sklearn(n_clusters=n_clusters)
             kmeans_sklearn.fit(x_train)
             y_test_predicted = kmeans_sklearn.predict(x_test)
+            print()
             print(f"[*] sklearn metricas")
-            print(y_test_predicted)
             metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             print()
     
