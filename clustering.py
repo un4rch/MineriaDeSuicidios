@@ -256,9 +256,10 @@ if __name__ == "__main__":
             print(f"[*] PCA en de los clusters en 2D:")
             plot_clusters_2d(clusters, centroids, "2_dimensions_pca.png")
             print(f"    Imagen guardada: 2_dimensions_pca.png")
-            print(f"[*] PCA en de los clusters en 2D segun el numero de clusters optimo (elbow method):")
-            plot_clusters_2d(clusters_codos, centroids_codos, f"2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
-            print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
+            if n_codos:
+                print(f"[*] PCA en de los clusters en 2D segun el numero de clusters optimo (elbow method):")
+                plot_clusters_2d(clusters_codos, centroids_codos, f"2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
+                print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
             # Comparativa KMeans implementado y sklearn con el mismo numero de clusters
             print(f"[*] Nuestras metricas")
             metricas.calculate_all_metrics(y_test, np.array(list(y_test_predicted.values())), x_test)
