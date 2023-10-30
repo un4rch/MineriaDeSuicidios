@@ -49,10 +49,9 @@ tolerance:
    - None: para usar un numero de iteraciones en vez de la tolerancia
 centorids_init = str(”<inicializacion>”) (valores permitidos: random init, space division init, separated init)
 p_minkowski = float(<max-iter>)
-   - 1: Manhattan
-   - 2: Euclidean
-   - 7.5: Minkowski
-   - Se pueden probar otros valores
+   - Manhattan: 1
+   - Euclidean: 2
+   - Minkowski: Cualquier valor
 test_size = float(<test size>) (test size ∈ [0, 1], nomalmente: 0.2)
 saveModeloKmeans:
    - str(”<nombre-fichero>”): para guardar el modelo de kmeans
