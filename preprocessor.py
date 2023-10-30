@@ -19,7 +19,7 @@ class Preprocessor:
     def __init__(self) -> None:
           pass
     
-    def convertirEmojis(self, texto, switch):  # convierte un emoji en un conjunto de palabras en inglés que lo representa. Si switch es False, entonces se eliminan los emojis
+    def convertirEmojis(self, texto, switch):  # Convierte un emoji en un conjunto de palabras en inglés que lo representa. Si switch es False, entonces se eliminan los emojis
         if switch:
             texto = emoji.demojize(texto)
             diccionario_emojis = emot.emo_unicode.EMOTICONS_EMO
@@ -31,16 +31,16 @@ class Preprocessor:
             texto = texto.strip()
         return texto
     
-    def eliminarSignosPuntuacion(self, texto):  # dado un string, devuelve el mismo string eliminando todos los caracteres que no sean alfabéticos
+    def eliminarSignosPuntuacion(self, texto):  # Dado un string, devuelve el mismo string eliminando todos los caracteres que no sean alfabéticos
         textoNuevo = ""
-        for caracter in texto:  # por cada caracter en el texto
-            if caracter == "_":  # si es una barra baja, entonces se traduce como espacio
+        for caracter in texto:  # Por cada caracter en el texto
+            if caracter == "_":  # Si es una barra baja, entonces se traduce como espacio
                 textoNuevo = textoNuevo + " "
-            if caracter.isalpha() or caracter == " ":  # si pertenece al conjunto de letras del alfabeto, se engancha a "textoNuevo"
+            if caracter.isalpha() or caracter == " ":  # Si pertenece al conjunto de letras del alfabeto, se engancha a "textoNuevo"
                 textoNuevo = textoNuevo + caracter
         return(textoNuevo)
     
-    def eliminarStopWords(self, texto):  # dado un string, elimina las stopwords de ese string
+    def eliminarStopWords(self, texto):  # Dado un string, elimina las stopwords de ese string
         texto = word_tokenize(texto, language='english')
         textoNuevo = ""
         for palabra in texto:
@@ -48,7 +48,7 @@ class Preprocessor:
                 textoNuevo = textoNuevo + " " + palabra
         return(textoNuevo)
 
-    def normalizarTexto(self, texto):  # dado un string que contenga palabras, devuelve un string donde todas las letras sean minúsculas
+    def normalizarTexto(self, texto):  # Dado un string que contenga palabras, devuelve un string donde todas las letras sean minúsculas
         return(texto.lower())
     
     def aux_lematizar(self, palabra):
@@ -59,7 +59,7 @@ class Preprocessor:
                 "R": wordnet.ADV}
         return tag_dict.get(tag, wordnet.NOUN)
     
-    def lematizar(self, texto):  # dado un string, lematiza las palabras de ese string
+    def lematizar(self, texto):  # Dado un string, lematiza las palabras de ese string
         texto = nltk.word_tokenize(texto)
 
         # Inicializar el lematizador
@@ -76,7 +76,7 @@ class Preprocessor:
         texto_lematizado = ' '.join(palabras_lematizadas)
         return texto_lematizado
     
-    def preprocesarLenguajeNatural(self, pColumna, pSwitch):  # realiza todo el preproceso de un string en el orden correcto
+    def preprocesarLenguajeNatural(self, pColumna, pSwitch):  # Realiza todo el preproceso de un string en el orden correcto
         linea = str(pColumna)
         linea = self.convertirEmojis(linea, pSwitch)
         linea = self.eliminarSignosPuntuacion(linea)
@@ -89,27 +89,36 @@ class Preprocessor:
         texts_array = np.array(texts_array)
         y = np.array(labels_array)
 
+        # Limpia y tokeniza el texto de entrada
         x_cleaned = [self.preprocesarLenguajeNatural(t, "switch") for t in texts_array]
         x_tokenized = [[w for w in sentence.split(" ") if w != ""] for sentence in x_cleaned]
 
+        # Mapea las etiquetas únicas a valores numéricos
         if not pd.isnull(labels_array).all():
             label_map = {cat:index for index,cat in enumerate(np.unique(labels_array))}
             y_prep = np.asarray([label_map[l] for l in labels_array])
         else:
             y_prep = None
+
+        # Entrena un modelo Doc2Vec si no se proporciona uno    
         if not doc2vec_model:
+            # Crea datos etiquetados para el modelo Doc2Vec
             tagged_data = [TaggedDocument(words=row, tags=[str(label)]) for row, label in zip(x_tokenized, y_prep)]
-            model = Doc2Vec(vector_size=1000, window=5, min_count=1, workers=4, epochs=20)
+            # Configura y entrena el modelo Doc2Vec
+            model = Doc2Vec(vector_size=1500, window=5, min_count=1, workers=4, epochs=20)
             model.build_vocab(tagged_data)
             model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
-            #model.save("reddit_suicide_depression.model")
         else:
+            # Carga un modelo Doc2Vec existente si se proporciona uno
             model = Doc2Vec.load(doc2vec_model)
 
+        # Genera vectores de coordenadas para los datos de entrada
         nuevo_vectors = []
         for tokens in x_tokenized:
             vector = model.infer_vector(tokens)
             nuevo_vectors.append(vector)
+
+        # Realiza reducción de dimensionalidad (PCA) si no se proporciona un modelo PCA    
         if not pca_model:
             pca_model = PCA(n_components=pca_dimensions)
             pca_model.fit(nuevo_vectors)
@@ -117,71 +126,6 @@ class Preprocessor:
             with open(pca_model, 'rb') as file:
                 pca_model = pickle.load(file)
         x_prep = pca_model.transform(nuevo_vectors)
-        #x_prep.shape
 
-        #np.savetxt('x_prep.csv', x_comps, delimiter=',')
+        # Devuelve los datos procesados, etiquetas, modelo Doc2Vec y modelo PCA
         return x_prep, y_prep, model, pca_model
-
-class Sequencer():
-    
-    def __init__(self,
-                 all_words,
-                 max_words,
-                 seq_len,
-                 embedding_matrix
-                ):
-        
-        self.seq_len = seq_len
-        self.embed_matrix = embedding_matrix
-        """
-        temp_vocab = Vocab which has all the unique words
-        self.vocab = Our last vocab which has only most used N words.
-    
-        """
-        temp_vocab = list(set(all_words))
-        self.vocab = []
-        self.word_cnts = {}
-        """
-        Now we'll create a hash map (dict) which includes words and their occurencies
-        """
-        for word in temp_vocab:
-            # 0 does not have a meaning, you can add the word to the list
-            # or something different.
-            count = len([0 for w in all_words if w == word])
-            self.word_cnts[word] = count
-            counts = list(self.word_cnts.values())
-            indexes = list(range(len(counts)))
-        
-        # Now we'll sort counts and while sorting them also will sort indexes.
-        # We'll use those indexes to find most used N word.
-        cnt = 0
-        while cnt + 1 != len(counts):
-            cnt = 0
-            for i in range(len(counts)-1):
-                if counts[i] < counts[i+1]:
-                    counts[i+1],counts[i] = counts[i],counts[i+1]
-                    indexes[i],indexes[i+1] = indexes[i+1],indexes[i]
-                else:
-                    cnt += 1
-        
-        for ind in indexes[:max_words]:
-            self.vocab.append(temp_vocab[ind])
-                    
-    def textToVector(self,text):
-        # First we need to split the text into its tokens and learn the length
-        # If length is shorter than the max len we'll add some spaces (100D vectors which has only zero values)
-        # If it's longer than the max len we'll trim from the end.
-        tokens = text.split()
-        len_v = len(tokens)-1 if len(tokens) < self.seq_len else self.seq_len-1
-        vec = []
-        for tok in tokens[:len_v]:
-            try:
-                vec.append(self.embed_matrix[tok])
-            except Exception as E:
-                pass
-        
-        last_pieces = self.seq_len - len(vec)
-        for i in range(last_pieces):
-            vec.append(np.zeros(100,))
-        
-        return np.asarray(vec).flatten()
