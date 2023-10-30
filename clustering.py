@@ -23,7 +23,8 @@ from collections import Counter
 # Preproceso
 # ----------
 soloPreproceso = False
-preprocessed_file = "test50000_prep.csv"
+#preprocessed_file = "50000instancias_prep.csv"
+preprocessed_file = None
 # If preprocessed_file == None
 unpreprocessed_file = "test50000.csv"
 guardarPreproceso = "test50000_prep.csv"
@@ -196,10 +197,7 @@ if __name__ == "__main__":
         # Cargar el fichero de datos
         x,y = load_dataset(unpreprocessed_file)
         preprocessor = Preprocessor()
-        if doc2vec_model and pca_model and not train:
-            x_prep,y_prep,doc2vec_model,pca_model = preprocessor.doc2vec(x, y, pca_dimensions=pca_dimensions, doc2vec_model=doc2vec_model, pca_model=pca_model)
-        else:
-            x_prep,y_prep,doc2vec_model,pca_model = preprocessor.doc2vec(x, y, pca_dimensions=pca_dimensions, doc2vec_model=None, pca_model=None)
+        x_prep,y_prep,doc2vec_model,pca_model = preprocessor.doc2vec(x, y, pca_dimensions=pca_dimensions, doc2vec_model=doc2vec_model, pca_model=pca_model)
         vectors_list = x_prep.tolist()
         vectors_list = [tuple(point) for point in vectors_list]
         labels_list = y_prep
@@ -209,7 +207,7 @@ if __name__ == "__main__":
                 writer = csv.writer(file)
                 writer.writerow(["text","class"])
                 for idx,point in enumerate(vectors_list):
-                    writer.writerow([point,y_prep[idx]])
+                    writer.writerow([point,y[idx]])
             print(f"    Fichero guardado: {guardarPreproceso}")
             if train:
                 doc2vec_model.save(unpreprocessed_file.split(".")[0]+"_doc2vec.model")
