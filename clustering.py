@@ -239,7 +239,7 @@ def class_to_cluster(labels, predicted_labels):
     for clase,clusters in class_clusters_equivalents.items():
         for cluster in clusters:
             reverse_mapping[cluster] = clase
-    map_function = np.vectorize(lambda x: reverse_mapping[str(x)])
+    map_function = np.vectorize(lambda x: int(reverse_mapping[str(x)]))
     mapped_array = map_function(predicted_labels)
     cm_semi_agrupada = []
     clases_ordenadas = [int(clase) for clase in list(class_clusters_equivalents.keys())]
