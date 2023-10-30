@@ -26,8 +26,8 @@ soloPreproceso = False
 #preprocessed_file = "50000instancias_prep.csv"
 preprocessed_file = None
 # If preprocessed_file == None
-unpreprocessed_file = "test50000.csv"
-guardarPreproceso = "test50000_prep.csv"
+unpreprocessed_file = "50000instancias.csv"
+guardarPreproceso = "50000instancias_prep.csv"
 pca_dimensions = 200
 # If preprocessed_file not None
 # Se usa la variable preprocessed_file
@@ -52,8 +52,8 @@ numIteracionesCodos = None
 # Predicciones (If train == False)
 # --------------------------------
 useModeloKmeans = "kmeans_model.pkl"
-doc2vec_model = "100lineas_doc2vec.model" # None to train, else use trained model to predict
-pca_model = "100lineas_pca.model"
+doc2vec_model = None # None to train, else use trained model to predict
+pca_model = None
 output_prediction_file = "predicted.csv"
 
 """
