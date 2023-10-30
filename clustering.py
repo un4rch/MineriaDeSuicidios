@@ -239,7 +239,8 @@ def class_to_cluster(labels, predicted_labels):
     for clase,clusters in class_clusters_equivalents.items():
         for cluster in clusters:
             reverse_mapping[cluster] = clase
-    output_array = np.vectorize(reverse_mapping.get)(predicted_labels)
+    map_function = np.vectorize(lambda x: reverse_mapping[str(x)])
+    mapped_array = map_function(predicted_labels)
     cm_semi_agrupada = []
     clases_ordenadas = [int(clase) for clase in list(class_clusters_equivalents.keys())]
     clases_ordenadas = sorted(clases_ordenadas)
@@ -261,7 +262,7 @@ def class_to_cluster(labels, predicted_labels):
         filas_no_cero = np.any(cm_agrupada != 0, axis=1)
         cm_agrupada = cm_agrupada[filas_no_cero]
     save_heatmap(cm_agrupada, 'heatmap_after_cluster_grouping', "d")
-    return output_array
+    return mapped_array
 
 if __name__ == "__main__":
     x = None
