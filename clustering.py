@@ -240,7 +240,6 @@ def class_to_cluster(labels, predicted_labels):
         for cluster in clusters:
             reverse_mapping[cluster] = clase
     output_array = np.vectorize(reverse_mapping.get)(predicted_labels)
-    # return output_array
     cm_semi_agrupada = []
     clases_ordenadas = [int(clase) for clase in list(class_clusters_equivalents.keys())]
     clases_ordenadas = sorted(clases_ordenadas)
@@ -262,6 +261,7 @@ def class_to_cluster(labels, predicted_labels):
         filas_no_cero = np.any(cm_agrupada != 0, axis=1)
         cm_agrupada = cm_agrupada[filas_no_cero]
     save_heatmap(cm_agrupada, 'heatmap_after_cluster_grouping', "d")
+    return output_array
 
 if __name__ == "__main__":
     x = None
@@ -314,7 +314,7 @@ if __name__ == "__main__":
 
         y_test_predicted = kmeans.predict(x_test)
         y_test_predicted = np.array(list(y_test_predicted.values()))
-        class_to_cluster(y_test, y_test_predicted)
+        y_test_predicted = class_to_cluster(y_test, y_test_predicted)
 
         # Elegir el numero de clusters optimo con el metodo de los codos
         if imprimirMetricas:
