@@ -23,7 +23,7 @@ from collections import Counter
 # Preproceso
 # ----------
 soloPreproceso = False
-preprocessed_file = "50000instancias_prep.csv"
+preprocessed_file = "test50000_prep.csv"
 # If preprocessed_file == None
 unpreprocessed_file = "test50000.csv"
 guardarPreproceso = "test50000_prep.csv"
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 writer = csv.writer(file)
                 writer.writerow(["text","class"])
                 for idx,point in enumerate(vectors_list):
-                    writer.writerow([point,y[idx]])
+                    writer.writerow([point,y_prep[idx]])
             print(f"    Fichero guardado: {guardarPreproceso}")
             if train:
                 doc2vec_model.save(unpreprocessed_file.split(".")[0]+"_doc2vec.model")
