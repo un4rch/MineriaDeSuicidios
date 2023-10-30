@@ -42,3 +42,5 @@ class Metrics:
         print(f"Exactitud (Accuracy): {accuracy}")
         print(f"Puntuación F (F-score): {f1}")
         print(f"Estadística Kappa: {kappa}")
+
+        return [silhouette, davies_bouldin, calinski_harabasz, adjusted_rand, normalized_mutual_info, fowlkes_mallows, jaccard, precision, recall, accuracy, f1, kappa]
