@@ -381,8 +381,11 @@ if __name__ == "__main__":
                                 kmeans_sklearn = KMeans_sklearn(n_clusters=p_n_clusters)
                                 kmeans_sklearn.fit(x_train)
                                 y_test_predicted = kmeans_sklearn.predict(x_test)
+                                y_test_predicted,listaPrint = class_to_cluster(y_test, y_test_predicted)
                                 listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
                                 file.write("\n[*] sklearn metricas\n")
+                                for line in listaPrint:
+                                    file.write(line+"\n")
                                 file.write("\nMétricas Internas:\n")
                                 file.write(f"Coeficiente de Silhouette: {listaMetricas[0]}\n")
                                 file.write(f"Índice de Davies-Bouldin: {listaMetricas[1]}\n")
