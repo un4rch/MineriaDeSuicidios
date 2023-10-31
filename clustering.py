@@ -38,7 +38,7 @@ pca_dimensions = 200
 train = True # True: train, False: predict
 # Entrenamiento (If train == True)
 # --------------------------------
-n_clusters = 3 # 3,7,8
+n_clusters = 8 # 3,7,8
 maxIter = None #100
 tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
 centorids_init = "random_init" #random_init, space_division_init, separated_init
@@ -46,6 +46,7 @@ p_minkowski = 7.5
 test_size = 0.2 #20%
 saveModeloKmeans = "50000instancias_kmeans_model.pkl" #None if you do not want to save model to predict later
 imprimirMetricas = True
+saveMetricas = "50000instancias_metricas.csv"
 # If imprimirMetricas == True
 n_codos = None # None if not want to make elbow method
 numIteracionesCodos = None
@@ -56,6 +57,15 @@ useModeloKmeans = "kmeans_model.pkl"
 doc2vec_model = "50000instancias_doc2vec.model" # None to train, else use trained model to predict
 pca_model = "50000instancias_pca.model"
 output_prediction_file = "predicted.csv"
+
+# Testing
+#--------
+doTesting = False
+testing_dir = "pruebas"
+p_n_clusters = [2,7,8]
+p_dists = [1,2,7.5]
+p_inits = ["random_init", "space_division_init", "separated_init"]
+p_iters = [1e-4, 100]
 
 """
 # Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas
@@ -261,7 +271,7 @@ def class_to_cluster(labels, predicted_labels):
         filas_no_cero = np.any(cm_agrupada != 0, axis=1)
         cm_agrupada = cm_agrupada[filas_no_cero]
     save_heatmap(cm_agrupada, 'heatmap_after_cluster_grouping', "d")
-    return mapped_array,listaPrint
+    return mapped_array,listaPrint,class_clusters_equivalents
 
 if __name__ == "__main__":
     x = None
@@ -314,7 +324,9 @@ if __name__ == "__main__":
 
         y_test_predicted = kmeans.predict(x_test)
         y_test_predicted = np.array(list(y_test_predicted.values()))
-        y_test_predicted = class_to_cluster(y_test, y_test_predicted)
+        y_test_predicted,listaPrint_kmeans,class_clusters_equivalents_kmeans = class_to_cluster(y_test, y_test_predicted)
+        # Guardar el class-to-cluster en el modelo kmeans (actualizar centroides)
+        kmeans.reassing_centroids(class_clusters_equivalents_kmeans)
 
         # Elegir el numero de clusters optimo con el metodo de los codos
         if imprimirMetricas:
@@ -337,87 +349,140 @@ if __name__ == "__main__":
                 plot_clusters_2d(clusters_codos, centroids_codos, f"2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
                 print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
             # Comparativa KMeans implementado y sklearn con el mismo numero de clusters
-            for p_n_clusters in [2,7,8]:
-                for p_dist in [1,2,7.5]:
-                    for p_init in ["random_init", "space_division_init", "separated_init"]:
-                        for p_iter in [1e-4, 100]:
-                            print(f"{p_n_clusters}_{p_dist}_{p_init}_{p_iter}.txt")
-                            if p_iter == 1e-4:
-                                kmeans = KMeans(p_n_clusters, None, centorids_init, p_minkowski, p_iter)
-                            else:
-                                kmeans = KMeans(p_n_clusters, 100, centorids_init, p_minkowski, None)
-                            centroids, clusters = kmeans.fit(x_train)
-                            y_test_predicted = kmeans.predict(x_test)
-                            y_test_predicted = np.array(list(y_test_predicted.values()))
-                            y_test_predicted,listaPrint = class_to_cluster(y_test, y_test_predicted)
-                            with open(f"pruebas/{p_n_clusters}_{p_dist}_{p_init}_{p_iter}.txt", "w") as file:
-                                file.write(f"Numero de clusters: {p_n_clusters}\n")
-                                file.write(f"Distancia: {p_dist}\n")
-                                file.write(f"Inicializacion: {p_init}\n")
-                                file.write(f"Maximo de iteraciones: {p_iter}\n\n")
-                                listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
-                                 # Imprimir los resultados
-                                for line in listaPrint:
-                                    file.write(line+"\n")
-                                file.write("\n[*] Nuestras metricas\n")
-                                file.write("\nMétricas Internas:\n")
-                                file.write(f"Coeficiente de Silhouette: {listaMetricas[0]}\n")
-                                file.write(f"Índice de Davies-Bouldin: {listaMetricas[1]}\n")
-                                file.write(f"Índice de Calinski-Harabasz: {listaMetricas[2]}\n")
+            if doTesting:
+                if not os.path.exists(testing_dir):
+                    os.makedirs(testing_dir)
+                for p_n_cluster in p_n_clusters:
+                    for p_dist in p_dists:
+                        for p_init in p_inits:
+                            for p_iter in p_iters:
+                                print(f"{p_n_clusters}_{p_dist}_{p_init}_{p_iter}.txt")
+                                if p_iter == 1e-4:
+                                    kmeans = KMeans(p_n_clusters, None, centorids_init, p_minkowski, p_iter)
+                                else:
+                                    kmeans = KMeans(p_n_clusters, 100, centorids_init, p_minkowski, None)
+                                centroids, clusters = kmeans.fit(x_train)
+                                y_test_predicted = kmeans.predict(x_test)
+                                y_test_predicted = np.array(list(y_test_predicted.values()))
+                                y_test_predicted,listaPrint,class_clusters_equivalents = class_to_cluster(y_test, y_test_predicted)
+                                with open(f"{testing_dir}/{p_n_clusters}_{p_dist}_{p_init}_{p_iter}.txt", "w") as file:
+                                    file.write(f"Numero de clusters: {p_n_clusters}\n")
+                                    file.write(f"Distancia: {p_dist}\n")
+                                    file.write(f"Inicializacion: {p_init}\n")
+                                    file.write(f"Maximo de iteraciones: {p_iter}\n\n")
+                                    listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
+                                     # Imprimir los resultados
+                                    for line in listaPrint:
+                                        file.write(line+"\n")
+                                    file.write("\n[*] Nuestras metricas\n")
+                                    file.write("\nMétricas Internas:\n")
+                                    file.write(f"Coeficiente de Silhouette: {listaMetricas[0]}\n")
+                                    file.write(f"Índice de Davies-Bouldin: {listaMetricas[1]}\n")
+                                    file.write(f"Índice de Calinski-Harabasz: {listaMetricas[2]}\n")
 
-                                file.write("\nMétricas Externas:\n")
-                                file.write(f"Índice de Rand Ajustado: {listaMetricas[3]}\n")
-                                file.write(f"Información Mutua Normalizada: {listaMetricas[4]}\n")
-                                file.write(f"Índice de Fowlkes-Mallows: {listaMetricas[5]}\n")
-                                file.write(f"Índice de Jaccard: {listaMetricas[6]}\n")
+                                    file.write("\nMétricas Externas:\n")
+                                    file.write(f"Índice de Rand Ajustado: {listaMetricas[3]}\n")
+                                    file.write(f"Información Mutua Normalizada: {listaMetricas[4]}\n")
+                                    file.write(f"Índice de Fowlkes-Mallows: {listaMetricas[5]}\n")
+                                    file.write(f"Índice de Jaccard: {listaMetricas[6]}\n")
 
-                                file.write("\nMétricas de Matriz de Confusión:\n")
-                                file.write(f"Precisión: {listaMetricas[7]}\n")
-                                file.write(f"Exhaustividad (Recall): {listaMetricas[8]}\n")
-                                file.write(f"Exactitud (Accuracy): {listaMetricas[9]}\n")
-                                file.write(f"Puntuación F (F-score): {listaMetricas[10]}\n")
-                                file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
+                                    file.write("\nMétricas de Matriz de Confusión:\n")
+                                    file.write(f"Precisión: {listaMetricas[7]}\n")
+                                    file.write(f"Exhaustividad (Recall): {listaMetricas[8]}\n")
+                                    file.write(f"Exactitud (Accuracy): {listaMetricas[9]}\n")
+                                    file.write(f"Puntuación F (F-score): {listaMetricas[10]}\n")
+                                    file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
 
-                                kmeans_sklearn = KMeans_sklearn(n_clusters=p_n_clusters)
-                                kmeans_sklearn.fit(x_train)
-                                y_test_predicted = kmeans_sklearn.predict(x_test)
-                                y_test_predicted,listaPrint = class_to_cluster(y_test, y_test_predicted)
-                                listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
-                                file.write("\n[*] sklearn metricas\n")
-                                for line in listaPrint:
-                                    file.write(line+"\n")
-                                file.write("\nMétricas Internas:\n")
-                                file.write(f"Coeficiente de Silhouette: {listaMetricas[0]}\n")
-                                file.write(f"Índice de Davies-Bouldin: {listaMetricas[1]}\n")
-                                file.write(f"Índice de Calinski-Harabasz: {listaMetricas[2]}\n")
+                                    kmeans_sklearn = KMeans_sklearn(n_clusters=p_n_clusters)
+                                    kmeans_sklearn.fit(x_train)
+                                    y_test_predicted = kmeans_sklearn.predict(x_test)
+                                    y_test_predicted,listaPrint,class_clusters_equivalents = class_to_cluster(y_test, y_test_predicted)
+                                    listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
+                                    file.write("\n[*] sklearn metricas\n")
+                                    for line in listaPrint:
+                                        file.write(line+"\n")
+                                    file.write("\nMétricas Internas:\n")
+                                    file.write(f"Coeficiente de Silhouette: {listaMetricas[0]}\n")
+                                    file.write(f"Índice de Davies-Bouldin: {listaMetricas[1]}\n")
+                                    file.write(f"Índice de Calinski-Harabasz: {listaMetricas[2]}\n")
 
-                                file.write("\nMétricas Externas:\n")
-                                file.write(f"Índice de Rand Ajustado: {listaMetricas[3]}\n")
-                                file.write(f"Información Mutua Normalizada: {listaMetricas[4]}\n")
-                                file.write(f"Índice de Fowlkes-Mallows: {listaMetricas[5]}\n")
-                                file.write(f"Índice de Jaccard: {listaMetricas[6]}\n")
+                                    file.write("\nMétricas Externas:\n")
+                                    file.write(f"Índice de Rand Ajustado: {listaMetricas[3]}\n")
+                                    file.write(f"Información Mutua Normalizada: {listaMetricas[4]}\n")
+                                    file.write(f"Índice de Fowlkes-Mallows: {listaMetricas[5]}\n")
+                                    file.write(f"Índice de Jaccard: {listaMetricas[6]}\n")
 
-                                file.write("\nMétricas de Matriz de Confusión:\n")
-                                file.write(f"Precisión: {listaMetricas[7]}\n")
-                                file.write(f"Exhaustividad (Recall): {listaMetricas[8]}\n")
-                                file.write(f"Exactitud (Accuracy): {listaMetricas[9]}\n")
-                                file.write(f"Puntuación F (F-score): {listaMetricas[10]}\n")
-                                file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
-                                file.close()
-                            with open(f"pruebas/{p_n_clusters}_{p_dist}_{p_init}_{p_iter}_kmeans.pkl", "wb") as file:
-                                pickle.dump(kmeans, file)
-                                file.close()
+                                    file.write("\nMétricas de Matriz de Confusión:\n")
+                                    file.write(f"Precisión: {listaMetricas[7]}\n")
+                                    file.write(f"Exhaustividad (Recall): {listaMetricas[8]}\n")
+                                    file.write(f"Exactitud (Accuracy): {listaMetricas[9]}\n")
+                                    file.write(f"Puntuación F (F-score): {listaMetricas[10]}\n")
+                                    file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
+                                    file.close()
             print(f"[*] Nuestras metricas")
-            metricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
+            listaMetricas_kmeans = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
+            print()
+            print(f"[*] sklearn metricas")
             kmeans_sklearn = KMeans_sklearn(n_clusters=n_clusters)
             kmeans_sklearn.fit(x_train)
             y_test_predicted = kmeans_sklearn.predict(x_test)
+            y_test_predicted,listaPrint,class_clusters_equivalents_sklearn = class_to_cluster(y_test, y_test_predicted)
+            listaMetricas_sklearn,listaPrint_sklearn = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             print()
-            print(f"[*] sklearn metricas")
-            metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
-            print()
+            if saveMetricas:
+                with open(saveMetricas, "w") as file:
+                    file.write(f"Numero de clusters: {n_clusters}\n")
+                    file.write(f"Distancia: {p_minkowski}\n")
+                    file.write(f"Inicializacion: {centorids_init}\n")
+                    if maxIter:
+                        file.write(f"Maximo de iteraciones: {maxIter}\n\n")
+                    else:
+                        file.write(f"Maximo de iteraciones: {tolerance}\n\n")
+                    # Imprimir los resultados
+                    for line in listaPrint_kmeans:
+                        file.write(line+"\n")
+                    file.write("\n[*] Nuestras metricas\n")
+                    file.write("\nMétricas Internas:\n")
+                    file.write(f"Coeficiente de Silhouette: {listaMetricas_kmeans[0]}\n")
+                    file.write(f"Índice de Davies-Bouldin: {listaMetricas_kmeans[1]}\n")
+                    file.write(f"Índice de Calinski-Harabasz: {listaMetricas_kmeans[2]}\n")
+
+                    file.write("\nMétricas Externas:\n")
+                    file.write(f"Índice de Rand Ajustado: {listaMetricas_kmeans[3]}\n")
+                    file.write(f"Información Mutua Normalizada: {listaMetricas_kmeans[4]}\n")
+                    file.write(f"Índice de Fowlkes-Mallows: {listaMetricas_kmeans[5]}\n")
+                    file.write(f"Índice de Jaccard: {listaMetricas_kmeans[6]}\n")
+
+                    file.write("\nMétricas de Matriz de Confusión:\n")
+                    file.write(f"Precisión: {listaMetricas_kmeans[7]}\n")
+                    file.write(f"Exhaustividad (Recall): {listaMetricas_kmeans[8]}\n")
+                    file.write(f"Exactitud (Accuracy): {listaMetricas_kmeans[9]}\n")
+                    file.write(f"Puntuación F (F-score): {listaMetricas_kmeans[10]}\n")
+                    file.write(f"Estadística Kappa: {listaMetricas_kmeans[11]}\n")
+
+                    file.write("\n[*] sklearn metricas\n")
+                    for line in listaPrint_sklearn:
+                        file.write(line+"\n")
+                    file.write("\nMétricas Internas:\n")
+                    file.write(f"Coeficiente de Silhouette: {listaMetricas_sklearn[0]}\n")
+                    file.write(f"Índice de Davies-Bouldin: {listaMetricas_sklearn[1]}\n")
+                    file.write(f"Índice de Calinski-Harabasz: {listaMetricas_sklearn[2]}\n")
+
+                    file.write("\nMétricas Externas:\n")
+                    file.write(f"Índice de Rand Ajustado: {listaMetricas_sklearn[3]}\n")
+                    file.write(f"Información Mutua Normalizada: {listaMetricas_sklearn[4]}\n")
+                    file.write(f"Índice de Fowlkes-Mallows: {listaMetricas_sklearn[5]}\n")
+                    file.write(f"Índice de Jaccard: {listaMetricas_sklearn[6]}\n")
+
+                    file.write("\nMétricas de Matriz de Confusión:\n")
+                    file.write(f"Precisión: {listaMetricas_sklearn[7]}\n")
+                    file.write(f"Exhaustividad (Recall): {listaMetricas_sklearn[8]}\n")
+                    file.write(f"Exactitud (Accuracy): {listaMetricas_sklearn[9]}\n")
+                    file.write(f"Puntuación F (F-score): {listaMetricas_sklearn[10]}\n")
+                    file.write(f"Estadística Kappa: {listaMetricas_sklearn[11]}\n")
+                    file.close()
     
-        assigned_labels = kmeans.assign_numeric_labels(clusters)
+        #assigned_labels = kmeans.assign_numeric_labels(clusters)
         #saveAssignedPredictions("train_labels_assigned.csv", assigned_labels)
         if saveModeloKmeans:
             with open(saveModeloKmeans, "wb") as file:
