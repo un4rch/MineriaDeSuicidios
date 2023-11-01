@@ -136,19 +136,6 @@ class KMeans():
             for instance in cluster:
                 labels[instance] = idx
         return labels
-
-    def reassing_centroids(self, class_clusters_equivalents):
-        print(len(self.centroides)) # Deberia ser n_clusters
-        old_centroids = self.centroides
-        self.centroides = []
-        for clase,clusters in class_clusters_equivalents.items():
-            centroides_tmp = []
-            for cluster in clusters:
-                centroides_tmp.append(old_centroids[cluster])
-                # TODO en self.centroides, en la posicion "clase" poner el centroide medio de los centroides de las posiciones "clusters" en old_centroids
-            dimensions = len(centroides_tmp[0])
-            self.centroides[clase] = tuple(sum(coord[i] for coord in centroides_tmp) / len(centroides_tmp) for i in range(dimensions))
-        print(self.centroides) # Deberia ser len(class_clusters_equivalents)
 """
 #dataset_example = [(3, 4, 5), (3, 3, 1), (5, 6, 10), (7, 5, 2), (1, 9, 5), (4,6,7), (9,8,7)]
 dataset_example = [(1,2),(2,1),(6,3),(4,5),(9,7),(5,9)]
