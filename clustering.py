@@ -14,6 +14,7 @@ from sklearn.cluster import KMeans as KMeans_sklearn
 from collections import Counter
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
+import time
 
 ###############################################################################################################################################
 #                                                                                                                                             #
@@ -27,7 +28,7 @@ preprocessed_file = "50000instancias_prep.csv" # str (fichero datos preprocesado
 unpreprocessed_file = "50000instancias.csv" # Nombre del fichero con los datos SIN preprocesar
 guardarPreproceso = "50000instancias_prep.csv" # str (fichero donde se guardaran los datos preprocesados) | None (no guardar preproceso)
 doc2vec_model = "50000instancias_doc2vec.model" # str (usar un modelo doc2vec entrenado) | None (entrenar un modelo usando "doc2vec_vectors_size")
-doc2vec_vectors_size = 1500 # Tamaño del vector doc2vec
+doc2vec_vectors_size = 500 # Tamaño del vector doc2vec
 pca_model = "50000instancias_pca.model" # str (usar un modelo pca entrenado) | None (entrenar un modelo usando "pca_dimensions")
 pca_dimensions = 200 # Reduccion de dimensiones de los atributos (elegir los "n" mas representativos)
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ pca_dimensions = 200 # Reduccion de dimensiones de los atributos (elegir los "n"
 #                      Elegir entre: entrenar un modelo de KMeans o hacer predicciones usando un modelo ya entrenado                          #
 #                                                                                                                                             #
 ###############################################################################################################################################
-train = False # True (entrenar un modelo de KMeans) | False (Realizar predicciones con los datos)
+train = True # True (entrenar un modelo de KMeans) | False (Realizar predicciones con los datos)
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
 ###############################################################################################################################################
@@ -88,8 +89,7 @@ p_iters = [1e-4, 100] # Lista de criterios de convergencia a probar
 useModeloKmeans = "50000instancias_kmeans_model.pkl" # str (modelo de KMeans que se va a utilizar para hacer predicciones)
 useMappingKmeans = "50000instancias_kmeans.map" # str (mapeo class-to-cluster para convertir "n" clusters al numero de clusters original) | 
                                                 # None (no usar mapeo, y predecir con el numero de custers con el que ha sido entrenado el modelo KMeans)
-#output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones)
-output_prediction_file = None
+output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones e imprimirlas)
 
 """
 # Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas, se comporta igual que useMappingKmeans
@@ -304,8 +304,10 @@ if __name__ == "__main__":
         print("-------------")
         print("[*] Entrenando kmeans...")
         print()
+        inicio = time.time()
         centroids, clusters = kmeans.fit(x_train)
-
+        fin = time.time()
+        tiempo_kmeans = fin - inicio
         y_test_predicted = kmeans.predict(x_test)
         y_test_predicted = np.array(list(y_test_predicted.values()))
         y_test_predicted,listaPrint_kmeans,reverse_mapping_kmeans = class_to_cluster(y_test, y_test_predicted)
@@ -347,7 +349,10 @@ if __name__ == "__main__":
                                     kmeans = KMeans(p_n_clusters, None, centorids_init, p_minkowski, p_iter)
                                 else:
                                     kmeans = KMeans(p_n_clusters, 100, centorids_init, p_minkowski, None)
+                                inicio = time.time()
                                 centroids, clusters = kmeans.fit(x_train)
+                                fin = time.time()
+                                tiempo_kmeans = fin - inicio
                                 y_test_predicted = kmeans.predict(x_test)
                                 y_test_predicted = np.array(list(y_test_predicted.values()))
                                 y_test_predicted,listaPrint,reverse_mapping = class_to_cluster(y_test, y_test_predicted)
@@ -380,7 +385,10 @@ if __name__ == "__main__":
                                     file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
 
                                     kmeans_sklearn = KMeans_sklearn(n_clusters=p_n_clusters)
+                                    inicio = time.time()
                                     kmeans_sklearn.fit(x_train)
+                                    fin = time.time()
+                                    tiempo_sklearn = fin - inicio
                                     y_test_predicted = kmeans_sklearn.predict(x_test)
                                     y_test_predicted,listaPrint,reverse_mapping = class_to_cluster(y_test, y_test_predicted)
                                     listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
@@ -404,13 +412,18 @@ if __name__ == "__main__":
                                     file.write(f"Exactitud (Accuracy): {listaMetricas[9]}\n")
                                     file.write(f"Puntuación F (F-score): {listaMetricas[10]}\n")
                                     file.write(f"Estadística Kappa: {listaMetricas[11]}\n")
+                                    file.write(f"\nTiempo de ejecución kmeans: {tiempo_kmeans:.4f} segundos")
+                                    file.write(f"\nTiempo de ejecución sklearn: {tiempo_sklearn:.4f} segundos")
                                     file.close()
             print(f"[*] Nuestras metricas")
             listaMetricas_kmeans = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             print()
             print(f"[*] sklearn metricas")
             kmeans_sklearn = KMeans_sklearn(n_clusters=n_clusters)
+            inicio = time.time()
             kmeans_sklearn.fit(x_train)
+            fin = time.time()
+            tiempo_sklearn = fin - inicio
             y_test_predicted = kmeans_sklearn.predict(x_test)
             y_test_predicted,listaPrint_sklearn,reverse_mapping_sklearn = class_to_cluster(y_test, y_test_predicted)
             listaMetricas_sklearn = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
@@ -466,6 +479,8 @@ if __name__ == "__main__":
                     file.write(f"Exactitud (Accuracy): {listaMetricas_sklearn[9]}\n")
                     file.write(f"Puntuación F (F-score): {listaMetricas_sklearn[10]}\n")
                     file.write(f"Estadística Kappa: {listaMetricas_sklearn[11]}\n")
+                    file.write(f"\nTiempo de ejecución kmeans: {tiempo_kmeans:.4f} segundos")
+                    file.write(f"\nTiempo de ejecución sklearn: {tiempo_sklearn:.4f} segundos")
                     file.close()
     
         #assigned_labels = kmeans.assign_numeric_labels(clusters)
