@@ -58,8 +58,8 @@ imprimirMetricas = True # True (Realizar pruebas con metricas)
 #----------------------------------------------------------------------------------------------------------------------------------------------
 saveMetricas = "50000instancias_metricas.csv" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
 numIteracionesCodos = 1 # 1 (Realizar el metodo de los codos y generar 1 grafica de inercias) |
-                           # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
-                           # None (no hacer metodo de los codos)
+                        # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
+                        # None (no hacer metodo de los codos)
 n_codos = 10 # int (Seleccionar rango de codos a utilizar: [1,n_codos])
 
 ###############################################################################################################################################
