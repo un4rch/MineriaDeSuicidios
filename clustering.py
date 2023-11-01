@@ -91,11 +91,6 @@ useMappingKmeans = "50000instancias_kmeans.map" # str (mapeo class-to-cluster pa
                                                 # None (no usar mapeo, y predecir con el numero de custers con el que ha sido entrenado el modelo KMeans)
 output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones e imprimirlas)
 
-"""
-# Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas, se comporta igual que useMappingKmeans
-assignLabels = None # {0: "depresion", 1: "" 2: "", etc...}
-"""
-
 def metodo_codo(dataset, num_codos, numIteracionesCodos):
     lista100clusters = []
     if numIteracionesCodos > 1 and num_codos:
