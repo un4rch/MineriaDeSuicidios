@@ -40,7 +40,7 @@ train = True # True (entrenar un modelo de KMeans) | False (Realizar prediccione
 #                                                                                                                                             #
 ###############################################################################################################################################
 test_size = 0.2 # Porcentaje cuantos datos se van a usar para train y para test (0.2 --> 20% test, 80% train)
-n_clusters = 8 # Numero de clusters
+n_clusters = 7 # Numero de clusters
 maxIter = None # int (numero maximo de iteraciones como criterio de convergencia) | None (usar variable "tolerance" como criterio de convergencia)
 tolerance = 1e-4 # float (usar un umbral como criterio de convergencia, asumiendo un error poco relevante)
 centorids_init = "random_init" # str (modo de inicializacion de los centroides: random_init, space_division_init, separated_init)
@@ -56,10 +56,10 @@ saveMappingKmeans = "50000instancias_kmeans.map" # str (guardar el mapeo class-t
 ###############################################################################################################################################
 imprimirMetricas = True # True (Realizar pruebas con metricas)
 #----------------------------------------------------------------------------------------------------------------------------------------------
-saveMetricas = "50000instancias_metricas.csv" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
-numIteracionesCodos = 1 # 1 (Realizar el metodo de los codos y generar 1 grafica de inercias) |
-                        # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
-                        # None (no hacer metodo de los codos)
+saveMetricas = "50000instancias_metricas.txt" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
+numIteracionesCodos = None # 1 (Realizar el metodo de los codos y generar 1 grafica de inercias) |
+                           # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
+                           # None (no hacer metodo de los codos)
 n_codos = 10 # int (Seleccionar rango de codos a utilizar: [1,n_codos])
 
 ###############################################################################################################################################
@@ -82,5 +82,5 @@ p_iters = [1e-4, 100] # Lista de criterios de convergencia a probar
 useModeloKmeans = "50000instancias_kmeans_model.pkl" # str (modelo de KMeans que se va a utilizar para hacer predicciones)
 useMappingKmeans = "50000instancias_kmeans.map" # str (mapeo class-to-cluster para convertir "n" clusters al numero de clusters original) | 
                                                 # None (no usar mapeo, y predecir con el numero de custers con el que ha sido entrenado el modelo KMeans)
-output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones)
+output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones e imprimirlas)
 ```
