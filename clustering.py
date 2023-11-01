@@ -28,7 +28,7 @@ preprocessed_file = "50000instancias_prep.csv" # str (fichero datos preprocesado
 unpreprocessed_file = "50000instancias.csv" # Nombre del fichero con los datos SIN preprocesar
 guardarPreproceso = "50000instancias_prep.csv" # str (fichero donde se guardaran los datos preprocesados) | None (no guardar preproceso)
 doc2vec_model = "50000instancias_doc2vec.model" # str (usar un modelo doc2vec entrenado) | None (entrenar un modelo usando "doc2vec_vectors_size")
-doc2vec_vectors_size = 500 # Tamaño del vector doc2vec
+doc2vec_vectors_size = 1500 # Tamaño del vector doc2vec
 pca_model = "50000instancias_pca.model" # str (usar un modelo pca entrenado) | None (entrenar un modelo usando "pca_dimensions")
 pca_dimensions = 200 # Reduccion de dimensiones de los atributos (elegir los "n" mas representativos)
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ saveMappingKmeans = "50000instancias_kmeans.map" # str (guardar el mapeo class-t
 ###############################################################################################################################################
 imprimirMetricas = True # True (Realizar pruebas con metricas)
 #----------------------------------------------------------------------------------------------------------------------------------------------
-saveMetricas = "50000instancias_metricas.csv" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
+saveMetricas = "50000instancias_metricas.txt" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
 numIteracionesCodos = None # 1 (Realizar el metodo de los codos y generar 1 grafica de inercias) |
                            # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
                            # None (no hacer metodo de los codos)
