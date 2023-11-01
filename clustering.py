@@ -15,78 +15,90 @@ from collections import Counter
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-#Opciones:
-#dar un diccionario de numeros y labels "oficial para cambiarlos"
-#gudardar fichero preprocesado o usar uno existente
+###############################################################################################################################################
+#                                                                                                                                             #
+#                                                       Datos de entrada (preproceso)                                                         #
+#                                                                                                                                             #
+###############################################################################################################################################
+soloPreproceso = False # True (solo preprocesar datos) | False (ademas de preprocesar, entrenar modelo o hacer predicciones)
+#---- preprocessed_file != None ----------------------------------------------------------------------------------------------------------------
+preprocessed_file = "50000instancias_prep.csv" # str (fichero datos preprocesados) | None (usar variable "unpreprocessed_file" para preprocesar)
+#---- preprocessed_file == None ----------------------------------------------------------------------------------------------------------------
+unpreprocessed_file = "50000instancias.csv" # Nombre del fichero con los datos SIN preprocesar
+guardarPreproceso = "50000instancias_prep.csv" # str (fichero donde se guardaran los datos preprocesados) | None (no guardar preproceso)
+doc2vec_model = "50000instancias_doc2vec.model" # str (usar un modelo doc2vec entrenado) | None (entrenar un modelo usando "doc2vec_vectors_size")
+doc2vec_vectors_size = 1500 # Tamaño del vector doc2vec
+pca_model = "50000instancias_pca.model" # str (usar un modelo pca entrenado) | None (entrenar un modelo usando "pca_dimensions")
+pca_dimensions = 200 # Reduccion de dimensiones de los atributos (elegir los "n" mas representativos)
+#----------------------------------------------------------------------------------------------------------------------------------------------
 
-#--------------------------------------------------------#
-# Varibales para configurar el comportamiento del script #
-#--------------------------------------------------------#
-# Preproceso
-# ----------
-soloPreproceso = False
-preprocessed_file = "50000instancias_prep.csv"
-# If preprocessed_file == None
-unpreprocessed_file = "50000instancias.csv"
-guardarPreproceso = "50000instancias_prep.csv"
-pca_dimensions = 200
-# If preprocessed_file not None
-# Se usa la variable preprocessed_file
-# If soloPreproceso == True
-# No se ejecuta nada mas de las variables de abajo
+###############################################################################################################################################
+#                                                                                                                                             #
+#                      Elegir entre: entrenar un modelo de KMeans o hacer predicciones usando un modelo ya entrenado                          #
+#                                                                                                                                             #
+###############################################################################################################################################
+train = False # True (entrenar un modelo de KMeans) | False (Realizar predicciones con los datos)
+#----------------------------------------------------------------------------------------------------------------------------------------------
 
-train = True # True: train, False: predict
-# Entrenamiento (If train == True)
-# --------------------------------
-n_clusters = 8 # 3,7,8
-maxIter = None #100
-tolerance = 1e-4 # If maxIter == None, stop when has converged using this tolerance
-centorids_init = "random_init" #random_init, space_division_init, separated_init
-p_minkowski = 7.5
-test_size = 0.2 #20%
-saveModeloKmeans = "50000instancias_kmeans_model.pkl" #None if you do not want to save model to predict later
-imprimirMetricas = True
-saveMetricas = "50000instancias_metricas.csv"
-# If imprimirMetricas == True
-n_codos = None # None if not want to make elbow method
-numIteracionesCodos = None
+###############################################################################################################################################
+#                                                                                                                                             #
+#                            Entrenamiento (train == True): Generar un modelo KMeans configurando hiperparametros                             #
+#                                                                                                                                             #
+###############################################################################################################################################
+test_size = 0.2 # Porcentaje cuantos datos se van a usar para train y para test (0.2 --> 20% test, 80% train)
+n_clusters = 8 # Numero de clusters
+maxIter = None # int (numero maximo de iteraciones como criterio de convergencia) | None (usar variable "tolerance" como criterio de convergencia)
+tolerance = 1e-4 # float (usar un umbral como criterio de convergencia, asumiendo un error poco relevante)
+centorids_init = "random_init" # str (modo de inicializacion de los centroides: random_init, space_division_init, separated_init)
+p_minkowski = 7.5 # int/float (seleccionar que distancia se quiere usar: 1 (manhattan), 2 (euclidean), 7.5 (minkowski), "n" (cualquiera))
+saveModeloKmeans = "50000instancias_kmeans_model.pkl" # str (nombre del fichero donde se va a guardar el modelo kmeans) | None (no guardar modelo)
+saveMappingKmeans = "50000instancias_kmeans.map" # str (guardar el mapeo class-to-cluster) | None (no guardar mapeo)
+#----------------------------------------------------------------------------------------------------------------------------------------------
 
-# Predicciones (If train == False)
-# --------------------------------
-useModeloKmeans = "kmeans_model.pkl"
-doc2vec_model = "50000instancias_doc2vec.model" # None to train, else use trained model to predict
-pca_model = "50000instancias_pca.model"
-output_prediction_file = "predicted.csv"
+###############################################################################################################################################
+#                                                                                                                                             #
+#                                                             Metricas y Testing                                                              #
+#                                                                                                                                             #
+###############################################################################################################################################
+imprimirMetricas = True # True (Realizar pruebas con metricas)
+#----------------------------------------------------------------------------------------------------------------------------------------------
+saveMetricas = "50000instancias_metricas.csv" # str (fichero donde se van a guardar las metricas del algoritmo KMeans) | None (no guardar metricas)
+numIteracionesCodos = None # 1 (Realizar el metodo de los codos y generar 1 grafica de inercias) |
+                           # > 1 (Generar grafica donde se muestra con cuanta frecuencia los clusters han sido optimos) |
+                           # None (no hacer metodo de los codos)
+n_codos = 10 # int (Seleccionar rango de codos a utilizar: [1,n_codos])
 
-# Testing
-#--------
-doTesting = False
-testing_dir = "pruebas"
-p_n_clusters = [2,7,8]
-p_dists = [1,2,7.5]
-p_inits = ["random_init", "space_division_init", "separated_init"]
-p_iters = [1e-4, 100]
+###############################################################################################################################################
+#                                                                                                                                             #
+#          Barrido de hiperparametros: guardar las metricas de cada modelo para realizar comparativas y seleccionar el mejor modelo           #
+#                                                                                                                                             #
+###############################################################################################################################################
+doTesting = False # True (realizar barrido de hiperparametros) | False (no realizar barrido de hiperparametros)
+testing_dir = "pruebas" # str (directorio donde se van a guardar todas las metricas y modelos kmeans correspondientes) si doTesting == True
+p_n_clusters = [2,7,8] # Lista de numero de clusters a probar
+p_dists = [1,2,7.5] # Lista de tipos de distancias a probar
+p_inits = ["random_init", "space_division_init", "separated_init"] # Lista de tipos de inicializaciones a probar
+p_iters = [1e-4, 100] # Lista de criterios de convergencia a probar
+
+###############################################################################################################################################
+#                                                                                                                                             #
+#                            Predicciones (If train == False): Usar un modelo KMeans para realizar predicciones                               #
+#                                                                                                                                             #
+###############################################################################################################################################
+useModeloKmeans = "50000instancias_kmeans_model.pkl" # str (modelo de KMeans que se va a utilizar para hacer predicciones)
+useMappingKmeans = "50000instancias_kmeans.map" # str (mapeo class-to-cluster para convertir "n" clusters al numero de clusters original) | 
+                                                # None (no usar mapeo, y predecir con el numero de custers con el que ha sido entrenado el modelo KMeans)
+#output_prediction_file = "predicted.csv" # str (nombre fichero donde se van a guardar las predicciones) | None (no guardar predicciones)
+output_prediction_file = None
 
 """
-# Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas
+# Fichero que representa las asignaciones oficiales tras ver las asignaciones numericas, se comporta igual que useMappingKmeans
 assignLabels = None # {0: "depresion", 1: "" 2: "", etc...}
 """
 
-def saveAssignedPredictions(filename, assigned_labels):
-    with open(filename, "w") as file:
-        writter = csv.writer(file)
-        for post,label in assigned_labels.items():
-            if post in vectors_list:
-                idx = vectors_list.index(post)
-                """if assignLabels:
-                    writter.writerow([x[idx], assignLabels[label]])
-                else:
-                    writter.writerow([x[idx], label])"""
-                writter.writerow([x[idx], label])
-
 def metodo_codo(dataset, num_codos, numIteracionesCodos):
     lista100clusters = []
-    if numIteracionesCodos and num_codos:
+    if numIteracionesCodos > 1 and num_codos:
         for i in range(numIteracionesCodos):
             sum_of_squared_distances = []
             print(f"iter {i}")
@@ -95,38 +107,9 @@ def metodo_codo(dataset, num_codos, numIteracionesCodos):
                 kmeans = KMeans(k, maxIter, centorids_init, p_minkowski, tolerance)
                 kmeans.fit(dataset)
                 sum_of_squared_distances.append(kmeans.inertia)
-            """
-            #------------------------------------------------
-            wcss = sum_of_squared_distances
-            for i in range(1, len(wcss) - 1):
-                slope_current = wcss[i] - wcss[i - 1]
-                slope_next = wcss[i + 1] - wcss[i]
-    
-                # Verificar si la pendiente cambia significativamente
-                if slope_next < 0.5 * slope_current:
-                   optimal_clusters = i + 1  # Agregamos 1 porque el índice comienza en 1
-                    break
-            k = optimal_clusters
-            #------------------------------------------------
-            # Calcular las derivadas de segundo orden (cambios en la pendiente)
-            second_derivative = np.gradient(np.gradient(wcss))
-            # Encontrar el índice del máximo cambio en la pendiente
-            optimal_clusters = np.argmax(second_derivative) + 1
-            k = optimal_clusters
-            #------------------------------------------------
-            plt.scatter(optimal_clusters, wcss[optimal_clusters - 1], c='red', label='Punto óptimo')
-            plt.legend()
-            plt.show()
-            """
-            k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
-            plt.figure(figsize=(8, 6))
-            plt.plot(range(1, num_codos+1), sum_of_squared_distances, marker='o', linestyle='-', color='b')
-            plt.xlabel('Número de clusters (k)')
-            plt.ylabel('Suma de distancias al cuadrado')
-            plt.title('Método del codo para seleccionar k')
-            plt.grid(True)
-            plt.savefig(f'metodo_{num_codos}_codos_{k}_clusters.png', format='png')
-            plt.close()
+            #k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
+            deltas = np.diff(sum_of_squared_distances)
+            k = np.argmin(deltas) + 2
             lista100clusters.append(k)
         frecuencias = Counter(lista100clusters)
         frecuencias = dict(frecuencias)
@@ -142,7 +125,6 @@ def metodo_codo(dataset, num_codos, numIteracionesCodos):
         plt.title(f'Numero de clusters en {numIteracionesCodos} iteracinones')
         plt.savefig(f'{numIteracionesCodos}_elbow_counts_per_cluster.png', format='png')
         plt.close()
-        print(f"Saved_image: {numIteracionesCodos}_elbow_counts_per_cluster.png")
     else:
         if num_codos:
             sum_of_squared_distances = []
@@ -150,7 +132,9 @@ def metodo_codo(dataset, num_codos, numIteracionesCodos):
                 kmeans = KMeans(k, maxIter, centorids_init, p_minkowski, tolerance)
                 kmeans.fit(dataset)
                 sum_of_squared_distances.append(kmeans.inertia)
-            k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
+            #k = sum_of_squared_distances.index(min(sum_of_squared_distances))+1
+            deltas = np.diff(sum_of_squared_distances)
+            k = np.argmin(deltas) + 2
             plt.figure(figsize=(8, 6))
             plt.plot(range(1, num_codos+1), sum_of_squared_distances, marker='o', linestyle='-', color='b')
             plt.xlabel('Número de clusters (k)')
@@ -271,7 +255,7 @@ def class_to_cluster(labels, predicted_labels):
         filas_no_cero = np.any(cm_agrupada != 0, axis=1)
         cm_agrupada = cm_agrupada[filas_no_cero]
     save_heatmap(cm_agrupada, 'heatmap_after_cluster_grouping', "d")
-    return mapped_array,listaPrint,class_clusters_equivalents
+    return mapped_array,listaPrint,reverse_mapping
 
 if __name__ == "__main__":
     x = None
@@ -283,7 +267,7 @@ if __name__ == "__main__":
         # Cargar el fichero de datos
         x,y = load_dataset(unpreprocessed_file)
         preprocessor = Preprocessor()
-        x_prep,y_prep,doc2vec_model,pca_model = preprocessor.doc2vec(x, y, pca_dimensions=pca_dimensions, doc2vec_model=doc2vec_model, pca_model=pca_model)
+        x_prep,y_prep,doc2vec_model,pca_model = preprocessor.doc2vec(x, y, pca_dimensions=pca_dimensions, doc2vec_vectors_size=doc2vec_vectors_size, doc2vec_model=doc2vec_model, pca_model=pca_model)
         vectors_list = x_prep.tolist()
         vectors_list = [tuple(point) for point in vectors_list]
         labels_list = y_prep
@@ -324,9 +308,8 @@ if __name__ == "__main__":
 
         y_test_predicted = kmeans.predict(x_test)
         y_test_predicted = np.array(list(y_test_predicted.values()))
-        y_test_predicted,listaPrint_kmeans,class_clusters_equivalents_kmeans = class_to_cluster(y_test, y_test_predicted)
+        y_test_predicted,listaPrint_kmeans,reverse_mapping_kmeans = class_to_cluster(y_test, y_test_predicted)
         # Guardar el class-to-cluster en el modelo kmeans (actualizar centroides)
-        kmeans.reassing_centroids(class_clusters_equivalents_kmeans)
 
         # Elegir el numero de clusters optimo con el metodo de los codos
         if imprimirMetricas:
@@ -334,17 +317,20 @@ if __name__ == "__main__":
 
             print("Metricas")
             print("--------")
-            if n_codos:
+            if numIteracionesCodos and n_codos:
                 n_clusters_optimo = metodo_codo(vectors_list, n_codos, numIteracionesCodos)
                 kmeans_codos = KMeans(n_clusters_optimo, maxIter, centorids_init, p_minkowski, tolerance)
                 centroids_codos, clusters_codos = kmeans_codos.fit(x_train)
                 print(f"[*] Numero optimo de clusters (elbow method): {n_clusters_optimo}")
-                print(f"    Imagen guardada: metodo_{n_codos}_codos.png")
+                if numIteracionesCodos > 1:
+                    print(f"    Imagen guardada: {numIteracionesCodos}_elbow_counts_per_cluster.png")
+                else:
+                    print(f"    Imagen guardada: metodo_{n_codos}_codos.png")
             print(f"[*] SSE (Sum of Squared Errors): {kmeans.inertia}")
             print(f"[*] PCA en de los clusters en 2D:")
             plot_clusters_2d(clusters, centroids, "2_dimensions_pca.png")
             print(f"    Imagen guardada: 2_dimensions_pca.png")
-            if n_codos:
+            if numIteracionesCodos and n_codos:
                 print(f"[*] PCA en de los clusters en 2D segun el numero de clusters optimo (elbow method):")
                 plot_clusters_2d(clusters_codos, centroids_codos, f"2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
                 print(f"    Imagen guardada: 2_dimensions_pca_elbow_{n_clusters_optimo}_clusters.png")
@@ -364,7 +350,7 @@ if __name__ == "__main__":
                                 centroids, clusters = kmeans.fit(x_train)
                                 y_test_predicted = kmeans.predict(x_test)
                                 y_test_predicted = np.array(list(y_test_predicted.values()))
-                                y_test_predicted,listaPrint,class_clusters_equivalents = class_to_cluster(y_test, y_test_predicted)
+                                y_test_predicted,listaPrint,reverse_mapping = class_to_cluster(y_test, y_test_predicted)
                                 with open(f"{testing_dir}/{p_n_clusters}_{p_dist}_{p_init}_{p_iter}.txt", "w") as file:
                                     file.write(f"Numero de clusters: {p_n_clusters}\n")
                                     file.write(f"Distancia: {p_dist}\n")
@@ -396,7 +382,7 @@ if __name__ == "__main__":
                                     kmeans_sklearn = KMeans_sklearn(n_clusters=p_n_clusters)
                                     kmeans_sklearn.fit(x_train)
                                     y_test_predicted = kmeans_sklearn.predict(x_test)
-                                    y_test_predicted,listaPrint,class_clusters_equivalents = class_to_cluster(y_test, y_test_predicted)
+                                    y_test_predicted,listaPrint,reverse_mapping = class_to_cluster(y_test, y_test_predicted)
                                     listaMetricas = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
                                     file.write("\n[*] sklearn metricas\n")
                                     for line in listaPrint:
@@ -426,8 +412,8 @@ if __name__ == "__main__":
             kmeans_sklearn = KMeans_sklearn(n_clusters=n_clusters)
             kmeans_sklearn.fit(x_train)
             y_test_predicted = kmeans_sklearn.predict(x_test)
-            y_test_predicted,listaPrint,class_clusters_equivalents_sklearn = class_to_cluster(y_test, y_test_predicted)
-            listaMetricas_sklearn,listaPrint_sklearn = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
+            y_test_predicted,listaPrint_sklearn,reverse_mapping_sklearn = class_to_cluster(y_test, y_test_predicted)
+            listaMetricas_sklearn = metricas.calculate_all_metrics(y_test, y_test_predicted, x_test)
             print()
             if saveMetricas:
                 with open(saveMetricas, "w") as file:
@@ -483,14 +469,23 @@ if __name__ == "__main__":
                     file.close()
     
         #assigned_labels = kmeans.assign_numeric_labels(clusters)
-        #saveAssignedPredictions("train_labels_assigned.csv", assigned_labels)
         if saveModeloKmeans:
             with open(saveModeloKmeans, "wb") as file:
                 pickle.dump(kmeans, file)
+                file.close()
+            with open(saveMappingKmeans, "wb") as file:
+                pickle.dump(reverse_mapping_kmeans, file)
+                file.close()
     else: # Do predict
         if useModeloKmeans:
             with open(useModeloKmeans, "rb") as file:
                 kmeans = pickle.load(file)
+                file.close()
+        if useMappingKmeans:
+            with open(useMappingKmeans, "rb") as file:
+                reverse_mapping = dict(pickle.load(file))
+                file.close()
+                reverse_mapping = {int(key): int(value) for key, value in reverse_mapping.items()}
         else:
             #kmeans = KMeans(vectors_list, n_clusters, maxIter, centorids_init, p_minkowski, tolerance)
             #centroids, clusters = kmeans.fit()
@@ -499,39 +494,21 @@ if __name__ == "__main__":
         print("------------")
         assigned_labels = kmeans.predict(vectors_list)
         #print(assigned_labels)
-        #saveAssignedPredictions("test_labels_assigned.csv", assigned_labels)
     
         if output_prediction_file:
             with open(output_prediction_file, "w") as file:
                 writter = csv.writer(file)
                 for post,label in assigned_labels.items():
-                    if post in vectors_list:
-                        idx = vectors_list.index(post)
-                        """if assignLabels:
-                            writter.writerow([x[idx], assignLabels[label]])
-                        else:
-                            writter.writerow([x[idx], label])"""
-                        writter.writerow([x[idx], label])
+                    idx = vectors_list.index(post)
+                    if useMappingKmeans:
+                        writter.writerow([vectors_list[idx], reverse_mapping[label]])
+                    else:
+                        writter.writerow([vectors_list[idx], label])
             print(f"[*] Fichero guardado: {output_prediction_file}")
-
-
-
-"""
-# mapping
-labels_frecuency = {label: [0,0,0] for label in set(y)}
-for post,label in assigned_labels.items():
-    if post in vectors_list:
-        idx = vectors_list.index(post)
-        original_label = y[idx]
-        labels_frecuency[original_label][label] += 1
-        #print(original_label)
-        #print(label)
-print(labels_frecuency)
-new_assigned_labels = {}
-for post,label in assigned_labels.items():
-    for original_label in labels_frecuency:
-        idx = labels_frecuency[original_label].index(max(labels_frecuency[original_label]))
-        if label == idx:
-            new_assigned_labels[label] = original_label
-print(new_assigned_labels)
-"""
+        else:
+            for post,label in assigned_labels.items():
+                idx = vectors_list.index(post)
+                if useMappingKmeans:
+                    print(f"Instancia {idx}: {reverse_mapping[label]}")
+                else:
+                    print(f"Instancia {idx}: {label}")
