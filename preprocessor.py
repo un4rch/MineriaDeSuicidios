@@ -85,7 +85,7 @@ class Preprocessor:
         linea = self.lematizar(linea)
         return linea
     
-    def doc2vec(self, texts_array, labels_array, pca_dimensions, doc2vec_model=None, pca_model=None):
+    def doc2vec(self, texts_array, labels_array, pca_dimensions, doc2vec_vectors_size=None, doc2vec_model=None, pca_model=None):
         texts_array = np.array(texts_array)
         y = np.array(labels_array)
 
@@ -105,7 +105,7 @@ class Preprocessor:
             # Crea datos etiquetados para el modelo Doc2Vec
             tagged_data = [TaggedDocument(words=row, tags=[str(label)]) for row, label in zip(x_tokenized, y_prep)]
             # Configura y entrena el modelo Doc2Vec
-            model = Doc2Vec(vector_size=1500, window=5, min_count=1, workers=4, epochs=20)
+            model = Doc2Vec(vector_size=doc2vec_vectors_size, window=5, min_count=1, workers=4, epochs=20)
             model.build_vocab(tagged_data)
             model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
         else:
